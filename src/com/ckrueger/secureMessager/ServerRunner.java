@@ -8,6 +8,7 @@ public class ServerRunner extends Thread {
     public Server server = null;
     public int port = 0;
     private boolean serverReady = false;
+    private boolean end = false;
     
     public ServerRunner(int port) {
         this.port = port;
@@ -22,9 +23,12 @@ public class ServerRunner extends Thread {
         return this.server.getAddress();
     }
     
-    public boolean connectionAvailable()
-    {
+    public boolean connectionAvailable() {
         return serverReady;
+    }
+    
+    public void close() {
+        this.end = true;
     }
 
     @Override
@@ -32,7 +36,7 @@ public class ServerRunner extends Thread {
         this.serverReady = false;
         try {
             this.server = new Server(port);
-            System.out.println("Connection received from remote host");
+            //System.out.println("Connection received from remote host");
         } catch (IOException e) {
             System.err.println("ERROR: Failed to start messaging server on port " + Integer.toString(port));
             /*try {
@@ -46,6 +50,10 @@ public class ServerRunner extends Thread {
         }
         
         this.serverReady = true;
+        
+        while (this.end == false) {
+            ;
+        }
     }
     
 }

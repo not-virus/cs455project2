@@ -77,13 +77,18 @@ public class MessagerMain {
 	    if (next == NextAction.ACCEPT_CONNECTION) {
 	        System.out.println("Connection from client received");
 	        messageServer = serverThread.getServer();
+	        serverThread.close();
 	        
 	        // Get incoming message
-	        String incoming = new String(messageServer.readAllBytes(), StandardCharsets.UTF_8);
+	        String incoming = null;
 	        
 	        while (incoming == null) {
 	            // Get incoming message
-	            incoming = new String(messageServer.readAllBytes(), StandardCharsets.UTF_8);
+	            try {
+	                incoming = new String(messageServer.readAllBytes(), StandardCharsets.UTF_8);
+	            } catch (NullPointerException e) {
+	                ;
+	            }
 	        }
 	        
 	        System.out.println("Message from client: ");
@@ -98,6 +103,7 @@ public class MessagerMain {
 	        String serverAddress = input.nextLine();
 	        System.out.print("Server port number? ");
 	        int serverPort = input.nextInt();
+	        input.nextLine();
 	        
 	        // Reject existing listening ServerSocket
 	        /*while (serverAddress == localAddress && serverPort == localPort) {

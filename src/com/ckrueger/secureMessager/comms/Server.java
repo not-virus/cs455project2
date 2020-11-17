@@ -40,8 +40,6 @@ public class Server {
         // Wait for incoming connection
         this.socket = serverSocket.accept();
         
-        System.out.println("HERE");
-        
         // Configure IO streams
         this.dataInput = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
         this.dataOutput = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));        
