@@ -18,12 +18,13 @@ import java.lang.Runtime;
 public class MessagerMain {
     
     private static enum NextAction {
+        NONE,
         ACCEPT_CONNECTION,
-        CONNECT_TO_HOST,
+        CONNECT_TO_HOST
     }
     
     private static String localAddress;
-    private static int localPort = 3000;
+    private static int localPort = 3001;
 
 	public static void main(String[] args) throws Exception {
 	    // Input Scanner
@@ -57,7 +58,7 @@ public class MessagerMain {
 	    commandThread.start();
 	    
 	    // Wait for one of two things to happen
-	    NextAction next = null;
+	    NextAction next = NextAction.NONE;
 	    while (true)
 	    {
 	        if (serverThread.connectionAvailable()) {
@@ -68,6 +69,7 @@ public class MessagerMain {
 	            next = NextAction.CONNECT_TO_HOST;
 	            break;
 	        }
+	        //System.out.println("Server exists? " + serverThread.getServer());
 	    }
 	    
 	    // Declare this for use later, if client connection is received
@@ -80,7 +82,8 @@ public class MessagerMain {
 	        String incoming = new String(messageServer.readAllBytes(), StandardCharsets.UTF_8);
 	        
 	        while (incoming == null) {
-	            ;
+	            // Get incoming message
+	            incoming = new String(messageServer.readAllBytes(), StandardCharsets.UTF_8);
 	        }
 	        
 	        System.out.println("Message from client: ");
@@ -97,11 +100,11 @@ public class MessagerMain {
 	        int serverPort = input.nextInt();
 	        
 	        // Reject existing listening ServerSocket
-	        while (serverAddress == localAddress && serverPort == localPort) {
+	        /*while (serverAddress == localAddress && serverPort == localPort) {
 	            System.out.println("Cannot connect to self! Please choose another port.");
 	            System.out.print("Server port number? ");
 	            serverPort = input.nextInt();
-	        }
+	        }*/
 	        System.out.println("Attempting connection to server...");
 	        
 	        // Establish a connection to the server
@@ -125,9 +128,11 @@ public class MessagerMain {
 	            
 	            // Send it!
 	            client.write(messageBytes);
+	            
+	            System.out.println("Message sent. Goodbye.");
+	        } else {
+	            System.out.println("Could not connect to server. Goodbye.");
 	        }
-	        
-	        System.out.println("Message sent. Goodbye.");
 	        
 	        System.exit(0);
 	    }	    	    

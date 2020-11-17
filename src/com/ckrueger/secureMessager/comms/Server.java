@@ -25,6 +25,9 @@ public class Server {
         // Start server socket on provided port
         this.serverSocket = new ServerSocket(this.port);
         
+        
+        System.out.println("Server listening for connections on port " + this.port);
+        
         // Start server
         this.open();
     }
@@ -36,6 +39,8 @@ public class Server {
     public void open() throws IOException {
         // Wait for incoming connection
         this.socket = serverSocket.accept();
+        
+        System.out.println("HERE");
         
         // Configure IO streams
         this.dataInput = new DataInputStream(new BufferedInputStream(socket.getInputStream()));

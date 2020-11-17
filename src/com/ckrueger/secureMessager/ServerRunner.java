@@ -32,6 +32,7 @@ public class ServerRunner extends Thread {
         this.serverReady = false;
         try {
             this.server = new Server(port);
+            System.out.println("Connection received from remote host");
         } catch (IOException e) {
             System.err.println("ERROR: Failed to start messaging server on port " + Integer.toString(port));
             /*try {
@@ -43,6 +44,7 @@ public class ServerRunner extends Thread {
             }*/
             e.printStackTrace();
         }
+        
         this.serverReady = true;
     }
     

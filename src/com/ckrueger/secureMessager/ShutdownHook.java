@@ -28,13 +28,17 @@ public class ShutdownHook extends Thread {
      * Obligatory run method
      */
     public void run() {
-        try {
-            this.server.close();
-        } catch (IOException e) {
-            System.err.println("ERROR: Could not close server");
-            e.printStackTrace();
-        } catch (NullPointerException e) {
-            System.out.println("Shutdown hook: Server already closed");
+        if (this.server != null) {
+            try {
+                this.server.close();
+            } catch (IOException e) {
+                System.err.println("ERROR: Could not close server");
+                e.printStackTrace();
+            } catch (NullPointerException e) {
+                System.out.println("Shutdown hook: ERROR: Server null but also not null");
+            }
+        } else {
+            System.out.println("Shutdown hook: Server closed");
         }
             
     }
