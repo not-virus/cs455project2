@@ -82,29 +82,24 @@ public class MessagerMain {
 	        System.out.println("Awaiting message from client...");
 	        
 	        // Get incoming message
-	        String incoming = null;
+	        String incoming = new String();
 	        
-	        while (incoming == null) {
+	        while (!incoming.equals("Over")) {
 	            // Get incoming message
-	            try {
-	                incoming = new String(messageServer.readAllBytes(), StandardCharsets.UTF_8);
-	            } catch (NullPointerException e) {
-	                ;
+	            incoming = new String(messageServer.readAllBytes(), StandardCharsets.UTF_8);
+	            if (!incoming.equals("")) {
+	                System.out.println(incoming);
 	            }
 	        }
-	        
-	        Thread.sleep(10);
-	        
-	        try {
-                incoming = new String(messageServer.readAllBytes(), StandardCharsets.UTF_8);
-            } catch (NullPointerException e) {
-                ;
-            }
 	        
 	        System.out.println("Message from client: ");
 	        System.out.println(incoming);
 	        
 	        System.out.println("End of message. Goodbye.");
+	        
+           if (messageServer != null) {
+                messageServer.close();
+            }
 	        
 	    }
 	    else if (next == NextAction.CONNECT_TO_HOST) {
@@ -139,19 +134,18 @@ public class MessagerMain {
 	            System.out.println("Message?");
 	            String messageStr = input.nextLine();
 	            
+	            messageStr += "\n";
+	            
 	            // Convert message to byte array
 	            byte[] messageBytes = messageStr.getBytes(StandardCharsets.UTF_8);
 	            
 	            // Send it!
 	            client.write(messageBytes);
+	            client.write("Over\n".getBytes(StandardCharsets.UTF_8));
 	            
 	            System.out.println("Message sent. Goodbye.");
 	        } else {
 	            System.out.println("Could not connect to server. Goodbye.");
-	        }
-	        
-	        if (messageServer != null) {
-	            messageServer.close();
 	        }
 	        
 	        System.exit(0);
