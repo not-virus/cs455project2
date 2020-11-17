@@ -79,6 +79,8 @@ public class MessagerMain {
 	        messageServer = serverThread.getServer();
 	        serverThread.close();
 	        
+	        System.out.println("Awaiting message from client...");
+	        
 	        // Get incoming message
 	        String incoming = null;
 	        
@@ -90,6 +92,14 @@ public class MessagerMain {
 	                ;
 	            }
 	        }
+	        
+	        Thread.sleep(10);
+	        
+	        try {
+                incoming = new String(messageServer.readAllBytes(), StandardCharsets.UTF_8);
+            } catch (NullPointerException e) {
+                ;
+            }
 	        
 	        System.out.println("Message from client: ");
 	        System.out.println(incoming);
@@ -138,6 +148,10 @@ public class MessagerMain {
 	            System.out.println("Message sent. Goodbye.");
 	        } else {
 	            System.out.println("Could not connect to server. Goodbye.");
+	        }
+	        
+	        if (messageServer != null) {
+	            messageServer.close();
 	        }
 	        
 	        System.exit(0);

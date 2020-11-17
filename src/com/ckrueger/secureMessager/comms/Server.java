@@ -41,8 +41,8 @@ public class Server {
         this.socket = serverSocket.accept();
         
         // Configure IO streams
-        this.dataInput = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-        this.dataOutput = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));        
+        this.dataInput = new DataInputStream(socket.getInputStream());
+        this.dataOutput = new DataOutputStream(socket.getOutputStream());        
     }
     
     /**
@@ -73,6 +73,7 @@ public class Server {
     public void write(byte[] data) throws IOException {
         // Write bytes to client
         dataOutput.write(data);
+        dataOutput.flush();
     }
     
     /**
@@ -101,11 +102,16 @@ public class Server {
         // This will remain null unless data is available to read
         byte[] receivedData = null;
         
+        /*sSystem.out.println(dataInput.available());
+        
         if (dataInput.available() != 0)
         {
             // Read available bytes
             receivedData = dataInput.readAllBytes();
-        }
+        }*/
+        
+        // Read available bytes
+        receivedData = dataInput.readAllBytes();
         
         return receivedData;
     }
