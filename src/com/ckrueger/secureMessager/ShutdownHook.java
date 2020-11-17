@@ -33,7 +33,10 @@ public class ShutdownHook extends Thread {
         } catch (IOException e) {
             System.err.println("ERROR: Could not close server");
             e.printStackTrace();
+        } catch (NullPointerException e) {
+            System.out.println("Shutdown hook: Server already closed");
         }
+            
     }
 
 }

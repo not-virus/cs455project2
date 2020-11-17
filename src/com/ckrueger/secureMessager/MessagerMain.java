@@ -22,6 +22,7 @@ public class MessagerMain {
         CONNECT_TO_HOST,
     }
     
+    private static String localAddress;
     private static int localPort = 3000;
 
 	public static void main(String[] args) throws Exception {
@@ -96,7 +97,7 @@ public class MessagerMain {
 	        int serverPort = input.nextInt();
 	        
 	        // Reject existing listening ServerSocket
-	        while (serverPort == localPort) {
+	        while (serverAddress == localAddress && serverPort == localPort) {
 	            System.out.println("Cannot connect to self! Please choose another port.");
 	            System.out.print("Server port number? ");
 	            serverPort = input.nextInt();

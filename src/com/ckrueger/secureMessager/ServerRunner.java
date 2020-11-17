@@ -18,6 +18,10 @@ public class ServerRunner extends Thread {
         return this.server;
     }
     
+    public String getAddress() {
+        return this.server.getAddress();
+    }
+    
     public boolean connectionAvailable()
     {
         return serverReady;
