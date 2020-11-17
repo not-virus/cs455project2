@@ -74,6 +74,19 @@ public class MessagerMain {
 	    if (next == NextAction.ACCEPT_CONNECTION) {
 	        System.out.println("Connection from client received");
 	        messageServer = serverThread.getServer();
+	        
+	        // Get incoming message
+	        String incoming = new String(messageServer.readAllBytes(), StandardCharsets.UTF_8);
+	        
+	        while (incoming == null) {
+	            ;
+	        }
+	        
+	        System.out.println("Message from client: ");
+	        System.out.println(incoming);
+	        
+	        System.out.println("End of message. Goodbye.");
+	        
 	    }
 	    else if (next == NextAction.CONNECT_TO_HOST) {
 	        // Get remote server info
@@ -112,6 +125,8 @@ public class MessagerMain {
 	            // Send it!
 	            client.write(messageBytes);
 	        }
+	        
+	        System.out.println("Message sent. Goodbye.");
 	        
 	        System.exit(0);
 	    }	    	    
