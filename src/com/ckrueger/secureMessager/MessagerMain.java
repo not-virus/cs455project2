@@ -85,13 +85,15 @@ public class MessagerMain {
 	        // Get incoming message
 	        String incoming = new String();
 	        
-	        while (!incoming.equals("Over")) {
+	        /*while (!incoming.equals("Over")) {
 	            // Get incoming message
 	            incoming = new String(messageServer.readAllBytes(), StandardCharsets.UTF_8);
 	            if (!incoming.equals("")) {
 	                System.out.println(incoming);
 	            }
-	        }
+	        }*/
+	        
+	        incoming = new String(messageServer.readAllBytes(), StandardCharsets.UTF_8);
 	        
 	        System.out.println("Message from client: ");
 	        System.out.println(incoming);
@@ -108,15 +110,28 @@ public class MessagerMain {
 	        System.out.print("Server address? ");
 	        String serverAddress = input.nextLine();
 	        System.out.print("Server port number? ");
-	        int serverPort = input.nextInt();
-	        input.nextLine();
-	        
+	        int serverPort = Integer.parseInt(input.nextLine());
 	        // Reject existing listening ServerSocket
-	        /*while (serverAddress == localAddress && serverPort == localPort) {
-	            System.out.println("Cannot connect to self! Please choose another port.");
-	            System.out.print("Server port number? ");
-	            serverPort = input.nextInt();
-	        }*/
+            while (serverAddress == localAddress && serverPort == localPort) {
+                System.out.println("Cannot connect to self! Please choose another port.");
+                System.out.print("Server port number? ");
+                serverPort = input.nextInt();
+            }
+            
+	        System.out.print("Authenticate server using RSA public key? (y/n) ");
+	        String authInput = input.nextLine();
+	        while (!authInput.toLowerCase().strip().equals("y") || !authInput.toLowerCase().strip().equals("y")) {
+	            System.out.print("Authenticate? (y/n) ");
+	            authInput = input.nextLine();
+	        }
+	        boolean authenticateServer = authInput.toLowerCase().strip().equals("y");
+	        
+	        // FIXME Need to add a conditional block in here which executes if authFlag is true
+	        //  Will need to obtain server's public key, encrypt a message with it, then see if server can decrypt, re-encrypt and return
+	        if (authenticateServer) {
+	            // FIXME
+	        }
+	        
 	        System.out.println("Attempting connection to server...");
 	        
 	        // Establish a connection to the server
@@ -135,14 +150,11 @@ public class MessagerMain {
 	            System.out.println("Message?");
 	            String messageStr = input.nextLine();
 	            
-	            messageStr += "\n";
-	            
 	            // Convert message to byte array
 	            byte[] messageBytes = messageStr.getBytes(StandardCharsets.UTF_8);
 	            
 	            // Send it!
 	            client.write(messageBytes);
-	            client.write("Over\n".getBytes(StandardCharsets.UTF_8));
 	            
 	            client.close();
 	            
