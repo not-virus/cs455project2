@@ -7,8 +7,8 @@ public class Server {
     
     private ServerSocket serverSocket = null;
     private Socket socket = null;
-    private DataInputStream dataInput = null;
-    private DataOutputStream dataOutput = null;
+    private InputStream dataInput = null;
+    private OutputStream dataOutput = null;
     private String address = null;
     private int port = 0;
     
@@ -41,8 +41,8 @@ public class Server {
         this.socket = serverSocket.accept();
         
         // Configure IO streams
-        this.dataInput = new DataInputStream(socket.getInputStream());
-        this.dataOutput = new DataOutputStream(socket.getOutputStream());        
+        this.dataInput = socket.getInputStream(); //new DataInputStream(socket.getInputStream());
+        this.dataOutput = socket.getOutputStream(); //new DataOutputStream(socket.getOutputStream());        
     }
     
     /**
@@ -100,7 +100,8 @@ public class Server {
      */
     public byte[] readAllBytes() throws IOException {
         // This will remain null unless data is available to read
-        byte[] receivedData = null;
+        final int BUFFER_SIZE = 1024;
+        byte[] receivedData = new byte[BUFFER_SIZE];
         
         /*sSystem.out.println(dataInput.available());
         
@@ -111,7 +112,14 @@ public class Server {
         }*/
         
         // Read available bytes
-        receivedData = dataInput.readAllBytes();
+        //receivedData = dataInput.readAllBytes();
+        
+        int count = 0;
+        int current = 0;
+        while (count < BUFFER_SIZE && (current = dataInput.read()) != -1) {
+            receivedData[count] = (byte) current;
+            count++;
+        }
         
         return receivedData;
     }

@@ -8,8 +8,8 @@ public class Client {
     private Socket socket = null;
     private String address = null;
     private int port = 0;
-    private DataInputStream dataInput = null;
-    private DataOutputStream dataOutput = null;
+    private InputStream dataInput = null;
+    private OutputStream dataOutput = null;
     
     /**
      * Creates a client object and initiates a connection to the server
@@ -36,8 +36,8 @@ public class Client {
         this.socket = new Socket(address, port);
         
         // Configure IO streams
-        this.dataInput = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-        this.dataOutput = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));   
+        this.dataInput = socket.getInputStream(); //new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+        this.dataOutput = socket.getOutputStream(); //new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));   
     }
     
     /**
@@ -68,6 +68,7 @@ public class Client {
     public void write(byte[] data) throws IOException {
         // Write bytes to client
         dataOutput.write(data);
+        dataOutput.flush();
     }
     
     /**

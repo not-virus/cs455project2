@@ -37,10 +37,11 @@ public class MessagerMain {
 	    RSAKeyPairManager keyMgr = new RSAKeyPairManager(2048);
 
 	    System.out.println(" --- Welcome to CKSM --- ");
-	    System.out.println("Awaiting connection. Use \"connect\" to connect to a remote host.");
 	    
 	    // Start server on port 3000
 	    ServerRunner serverThread = new ServerRunner(localPort);
+	    
+	    System.out.println("Awaiting connection. Use \"connect\" to connect to a remote host.");
 	    
 	    // Create thread to wait for c keypress    
 	    CommandDetector commandThread = new CommandDetector("connect", input);
@@ -142,6 +143,8 @@ public class MessagerMain {
 	            // Send it!
 	            client.write(messageBytes);
 	            client.write("Over\n".getBytes(StandardCharsets.UTF_8));
+	            
+	            client.close();
 	            
 	            System.out.println("Message sent. Goodbye.");
 	        } else {
