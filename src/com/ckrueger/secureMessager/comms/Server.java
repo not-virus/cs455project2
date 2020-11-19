@@ -25,11 +25,8 @@ public class Server {
         // Start server socket on provided port
         this.serverSocket = new ServerSocket(this.port);
         
-        
-        System.out.println("Server listening for connections on port " + this.port);
-        
         // Start server
-        this.open();
+        open();
     }
     
     /**
@@ -41,15 +38,15 @@ public class Server {
         this.socket = serverSocket.accept();
         
         // Configure IO streams
-        this.dataInput = socket.getInputStream(); //new DataInputStream(socket.getInputStream());
-        this.dataOutput = socket.getOutputStream(); //new DataOutputStream(socket.getOutputStream());        
+        this.dataInput = new BufferedInputStream(socket.getInputStream()); //socket.getInputStream(); //new DataInputStream(socket.getInputStream());
+        this.dataOutput = new BufferedOutputStream(socket.getOutputStream()); //socket.getOutputStream(); //new DataOutputStream(socket.getOutputStream());        
     }
     
     /**
      * @return the port to which the server socket is attached
      */
     public int getPort() {
-        return this.port;
+        return port;
     }
         
     /**
@@ -63,7 +60,7 @@ public class Server {
      * @return the public IP address of the server
      */
     public String getAddress() {
-        return this.address;
+        return address;
     }    
     
     /**
@@ -83,12 +80,25 @@ public class Server {
      */
     public byte[] readBytes(int len) throws IOException {
         // This will remain null unless data is available to read
-        byte[] receivedData = null;
+        final int BUFFER_SIZE = Integer.MAX_VALUE;
+        byte[] receivedData = new byte[BUFFER_SIZE];
         
-        if (dataInput.available() != 0)
+        /*if (dataInput.available() != 0)
         {
             // Read available bytes
             receivedData = dataInput.readNBytes(len);
+        }*/
+        
+        // Read len bytes
+        //receivedData = dataInput.readNBytes(len);
+        
+        // Read len bytes from input stream OR up to BUFFER_SIZE
+        
+        int readCount = 0;
+        int currentByte = 0;
+        while (readCount < BUFFER_SIZE && readCount < len && (currentByte = dataInput.read()) != -1) {
+            receivedData[readCount] = (byte) currentByte;
+            readCount++;
         }
         
         return receivedData;
@@ -100,10 +110,10 @@ public class Server {
      */
     public byte[] readAllBytes() throws IOException {
         // This will remain null unless data is available to read
-        final int BUFFER_SIZE = 1024;
-        byte[] receivedData = new byte[BUFFER_SIZE];
+        //final int BUFFER_SIZE = Integer.MAX_VALUE;
+        //byte[] receivedData = new byte[BUFFER_SIZE];
         
-        /*sSystem.out.println(dataInput.available());
+        /*System.out.println(dataInput.available());
         
         if (dataInput.available() != 0)
         {
@@ -112,14 +122,14 @@ public class Server {
         }*/
         
         // Read available bytes
-        //receivedData = dataInput.readAllBytes();
-        
-        int count = 0;
-        int current = 0;
-        while (count < BUFFER_SIZE && (current = dataInput.read()) != -1) {
-            receivedData[count] = (byte) current;
-            count++;
-        }
+        byte[] receivedData = dataInput.readAllBytes();
+                
+        /*int readCount = 0;
+        int currentByte = 0;
+        while (readCount < BUFFER_SIZE && (currentByte = dataInput.read()) != -1) {
+            receivedData[readCount] = (byte) currentByte;
+            readCount++;
+        }*/
         
         return receivedData;
     }

@@ -25,10 +25,12 @@ public class MessagerMain {
     
     private static String localAddress;
     private static int localPort = 3001;
+    // Input Scanner
+    private static Scanner input = new Scanner(System.in);
 
 	public static void main(String[] args) throws Exception {
-	    // Input Scanner
-	    Scanner input = new Scanner(System.in);
+	    // Command Interpreter
+	    CLInputParser clip = new CLInputParser(System.in);
 	    
 	    // RSACipher class for encryption and decryption 
 	    RSACipher rsa = new RSACipher();
@@ -36,24 +38,28 @@ public class MessagerMain {
 	    // Key pair generation and management
 	    RSAKeyPairManager keyMgr = new RSAKeyPairManager(2048);
 
-	    System.out.println(" --- Welcome to CKSM --- ");
+	    System.out.println("   --- Welcome to CKSM v1.0 ---   ");
+	    System.out.println("Type !help for a list of commands.");
+	    //CLCommandInterpreter.Command next = clcli.command();
 	    
 	    // Start server on port 3000
 	    ServerRunner serverThread = new ServerRunner(localPort);
 	    
-	    System.out.println("Awaiting connection. Use \"connect\" to connect to a remote host.");
-	    
 	    // Create thread to wait for c keypress    
-	    CommandDetector commandThread = new CommandDetector("connect", input);
+	    CommandDetector commandThread = new CommandDetector(clip);
 	    
 	    // Start server thread
 	    serverThread.setName("Server");
 	    serverThread.start();
 	    
+	    System.out.println("Server listening for connections on port " + localPort);
+	    System.out.println("Awaiting connection. Use \"!connect\" to connect to a remote host.");
+	    
 	    // Attempt to release port if shutdown unexpectedly
         ShutdownHook shutdownHook = new ShutdownHook(serverThread.getServer());
         Runtime.getRuntime().addShutdownHook(shutdownHook);
 	    
+        
         // Start command listener thread
         commandThread.setName("command detector");
 	    commandThread.start();
@@ -66,89 +72,94 @@ public class MessagerMain {
 	            next = NextAction.ACCEPT_CONNECTION;
 	            break;
 	        }
-	        if (commandThread.success() || !commandThread.isAlive()) {
+	        if (commandThread.getCommand().command == CLToken.Commands.CONNECT
+	            || !commandThread.isAlive()) {
 	            next = NextAction.CONNECT_TO_HOST;
 	            break;
 	        }
-	        //System.out.println("Server exists? " + serverThread.getServer());
 	    }
 	    
 	    // Declare this for use later, if client connection is received
-	    Server messageServer = null;
+	    Server server = null;
 	    if (next == NextAction.ACCEPT_CONNECTION) {
-	        System.out.println("Connection from client received");
-	        messageServer = serverThread.getServer();
+	        System.out.println("Connection from client received.");
+	        server = serverThread.getServer();
 	        serverThread.close();
 	        
 	        System.out.println("Awaiting message from client...");
 	        
 	        // Get incoming message
 	        String incoming = new String();
-	        
-	        /*while (!incoming.equals("Over")) {
-	            // Get incoming message
-	            incoming = new String(messageServer.readAllBytes(), StandardCharsets.UTF_8);
-	            if (!incoming.equals("")) {
-	                System.out.println(incoming);
-	            }
-	        }*/
-	        
-	        incoming = new String(messageServer.readAllBytes(), StandardCharsets.UTF_8);
+	        incoming = new String(server.readAllBytes(), StandardCharsets.UTF_8);
 	        
 	        System.out.println("Message from client: ");
+	        System.out.print("> ");
 	        System.out.println(incoming);
 	        
 	        System.out.println("End of message. Goodbye.");
 	        
-           if (messageServer != null) {
-                messageServer.close();
+           if (server != null) {
+                server.close();
             }
-	        
+           
+           input.close();
+           
+           System.exit(0);	        
 	    }
 	    else if (next == NextAction.CONNECT_TO_HOST) {
-	        // Get remote server info
-	        System.out.print("Server address? ");
-	        String serverAddress = input.nextLine();
-	        System.out.print("Server port number? ");
-	        int serverPort = Integer.parseInt(input.nextLine());
-	        // Reject existing listening ServerSocket
-            while (serverAddress == localAddress && serverPort == localPort) {
-                System.out.println("Cannot connect to self! Please choose another port.");
-                System.out.print("Server port number? ");
-                serverPort = input.nextInt();
-            }
-            
-	        System.out.print("Authenticate server using RSA public key? (y/n) ");
-	        String authInput = input.nextLine();
-	        while (!authInput.toLowerCase().strip().equals("y") || !authInput.toLowerCase().strip().equals("y")) {
-	            System.out.print("Authenticate? (y/n) ");
-	            authInput = input.nextLine();
-	        }
-	        boolean authenticateServer = authInput.toLowerCase().strip().equals("y");
-	        
-	        // FIXME Need to add a conditional block in here which executes if authFlag is true
-	        //  Will need to obtain server's public key, encrypt a message with it, then see if server can decrypt, re-encrypt and return
-	        if (authenticateServer) {
-	            // FIXME
-	        }
-	        
-	        System.out.println("Attempting connection to server...");
-	        
-	        // Establish a connection to the server
+	        boolean connectSuccessful = false;
 	        Client client = null;
-	        try {
-	            client = new Client(serverAddress, serverPort);
-	        } catch (ConnectException e) {
-	            System.out.println("Failed to connect to " + serverAddress + ":" + serverPort);
+	        String serverAddress = "[no address]";
+	        int serverPort = -1;
+	        
+	        while (!connectSuccessful) {
+	            // Get remote server info
+	            System.out.println("Server address?");
+	            serverAddress = clip.ipAddress();
+	            System.out.println("Server port number?");
+	            serverPort = clip.port();
+	            
+	            // Reject existing listening ServerSocket
+	            while (serverAddress == localAddress && serverPort == localPort) {
+	                System.out.println("Cannot connect to self! Please choose another host.");
+	                System.out.println("Server address?");
+	                serverAddress = clip.ipAddress();
+	                System.out.println("Server port number?");
+	                serverPort = clip.port();
+	            }
+	            
+	            System.out.println("Authenticate server using RSA public key? (yes/no)");
+	            boolean authenticateServer = clip.yesNo();
+	            
+	            // FIXME Need to add a conditional block in here which executes if authFlag is true
+	            //  Will need to obtain server's public key, encrypt a message with it, then see if server can decrypt, re-encrypt and return
+	            if (authenticateServer) {
+	                // FIXME
+	            }
+	            
+	            System.out.println("Attempting connection to " + serverAddress + " on port " + serverPort + " ...");
+	            
+	            // Establish a connection to the server
+	            try {
+	                client = new Client(serverAddress, serverPort);
+	                connectSuccessful = true;
+	            } catch (ConnectException e) {
+	                System.out.println("ERROR: Failed to connect to " + serverAddress + " on port " + serverPort + ".");
+	                connectSuccessful = false;
+	            } catch (UnknownHostException e) {
+	                System.out.println("ERROR: Host " + serverAddress + " not reachable, is down or does not exist.");
+	                connectSuccessful = false;
+	            }
 	        }
 	        
 	        if (client != null)
 	        {
-	            System.out.println("Connected to " + serverAddress + ":" + serverPort);
+	            System.out.println("Connected to " + serverAddress + ":" + serverPort + ".");
+	            System.out.println("----------");
 	            
 	            // Get message from user
-	            System.out.println("Message?");
-	            String messageStr = input.nextLine();
+	            System.out.println("Enter message to server. Max. 2048 lines. Use \"!done\" when finished.");
+	            String messageStr = clip.message();
 	            
 	            // Convert message to byte array
 	            byte[] messageBytes = messageStr.getBytes(StandardCharsets.UTF_8);
@@ -162,6 +173,8 @@ public class MessagerMain {
 	        } else {
 	            System.out.println("Could not connect to server. Goodbye.");
 	        }
+	        
+	        input.close();
 	        
 	        System.exit(0);
 	    }	    	    
@@ -209,6 +222,11 @@ public class MessagerMain {
 		System.out.println("Done");
 		
 		input.close();        
+	}
+	
+	public static String nextLine() {
+	    System.out.print("cksm> ");
+	    return input.nextLine();
 	}
 	
 }
