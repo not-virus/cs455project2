@@ -103,6 +103,7 @@ public class MessagerMain {
                         System.out.println("You have chosen to reject the connection.");
                         // Start waiting for user input again
                         commandThread = new CommandDetector();
+                        commandThread.start();
                     }
                 } else if (commandThread.getCommand().command == CLToken.Commands.CONNECT) {
 //                    || !commandThread.isAlive()) {
@@ -199,13 +200,25 @@ public class MessagerMain {
                             serverCT = new CommandDetector();
                             serverCT.start(); 
                         }
-                    }                      
+                    } else if (serverCT.getCommand().command != CLToken.Commands.NONE) {
+                        System.out.println(serverCT.getCommand().value + ": command not available at this time.");
+                        serverCT.close();
+                        serverCT.getCommand().command = CLToken.Commands.NONE;
+                        serverCT = new CommandDetector();
+                        serverCT.start();
+                    }                    
                 }
                 
                 System.out.println("Disconnected from client");
                 
                 // Disconnect from client
                 server.close();
+                server = null;
+
+                // Restart server thread
+                serverThread = new ServerRunner(localPort);
+                serverThread.setName("Server");
+                serverThread.start();
                 
                 // Rest loop
                 next = Action.NONE;                
@@ -334,6 +347,12 @@ public class MessagerMain {
                                 clientCT = new CommandDetector();
                                 clientCT.start(); 
                             }
+                        } else if (clientCT.getCommand().command != CLToken.Commands.NONE) {
+                            System.out.println(clientCT.getCommand().value + ": command not available at this time.");
+                            clientCT.close(); 
+                            clientCT.getCommand().command = CLToken.Commands.NONE;
+                            clientCT = new CommandDetector();
+                            clientCT.start(); 
                         }
                     }
                     

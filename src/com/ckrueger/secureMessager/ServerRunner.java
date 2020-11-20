@@ -52,9 +52,9 @@ public class ServerRunner extends Thread {
         
         this.serverReady = true;
         
-        while (this.end == false) {
+        /*while (this.end == false) {
             ;
-        }
+        }*/
     }
     
 }

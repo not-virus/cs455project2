@@ -67,6 +67,10 @@ public class CommandDetector extends Thread {
     public CLToken getCommand() {
         return this.command;
     }
+
+    public void retrigger() {
+        waitForInput();
+    }
     
    public void run() {
        waitForInput();
