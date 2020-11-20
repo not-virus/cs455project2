@@ -291,7 +291,7 @@ public class MessagerMain {
                             // Get incoming message
                             String messageFromServer = null;
                             try {
-                                messageFromServer = new String(server.readAllBytes(), StandardCharsets.UTF_8);
+                                messageFromServer = new String(client.readAllBytes(), StandardCharsets.UTF_8);
                             } catch (SocketException e) {
                                 System.out.println("NOTICE: Server terminated the connection.");
                                 disconnect = true;
