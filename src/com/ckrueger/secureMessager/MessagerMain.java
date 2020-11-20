@@ -88,17 +88,21 @@ public class MessagerMain {
                     serverThread.close();
                     
                     // Prompt user to see if they'd like to accept the connection
-                    System.out.println("Connection available from server at" + server.getRemoteAddress());
+                    System.out.println("\nConnection available from server at " + server.getRemoteAddress());
                     System.out.println("Accept connection from server? (y/n)");
                     // Command Interpreter
                     CLInputParser connectConfirm = new CLInputParser(System.in);
                     boolean accept = connectConfirm.yesNo();
-                    System.out.println("You have chosen to conect.\n");
                     connectConfirm.close();
                     
                     // Take action if yes
                     if (accept) {
+                        System.out.println("You have chosen to connect.\n");
                         next = Action.ACCEPT_CONNECTION;
+                    } else {
+                        System.out.println("You have chosen to reject the connection.");
+                        // Start waiting for user input again
+                        commandThread = new CommandDetector(clip);
                     }
                 } else if (commandThread.getCommand().command == CLToken.Commands.CONNECT) {
 //                    || !commandThread.isAlive()) {
@@ -123,7 +127,7 @@ public class MessagerMain {
                 }
             }
             
-            // Action block
+  // ##### SERVER SECTION #####
             if (next == Action.ACCEPT_CONNECTION) {
                 // CLInputParser for server connection
                 CLInputParser serverClip = new CLInputParser(System.in);
@@ -150,7 +154,13 @@ public class MessagerMain {
                         System.out.println("\nNew message from client:");
                         
                         // Get incoming message
-                        String messageFromClient = new String(server.readAllBytes(), StandardCharsets.UTF_8);
+                        String messageFromClient = null;
+                        try {
+                            messageFromClient = new String(server.readAllBytes(), StandardCharsets.UTF_8);
+                        } catch (SocketException e) {
+                            System.out.println("NOTICE: Client terminated the connection.");
+                            disconnect = true;
+                        }
                         
                         System.out.print("> ");
                         System.out.println(messageFromClient);
@@ -191,7 +201,10 @@ public class MessagerMain {
                 
                 // Rest loop
                 next = Action.NONE;                
-            } else if (next == Action.CONNECT_TO_HOST) {
+            }
+            
+  // ##### CLIENT SECTION #####
+            else if (next == Action.CONNECT_TO_HOST) {
                 boolean connectSuccessful = false;
                 Client client = null;
                 String serverAddress = "[no address]";
@@ -266,7 +279,13 @@ public class MessagerMain {
                             System.out.println("\nNew message from server:");
                             
                             // Get incoming message
-                            String messageFromServer = new String(server.readAllBytes(), StandardCharsets.UTF_8);
+                            String messageFromServer = null;
+                            try {
+                                messageFromServer = new String(server.readAllBytes(), StandardCharsets.UTF_8);
+                            } catch (SocketException e) {
+                                System.out.println("NOTICE: Server terminated the connection.");
+                                disconnect = true;
+                            }
                             
                             System.out.print("> ");
                             System.out.println(messageFromServer);
@@ -285,7 +304,7 @@ public class MessagerMain {
                             System.out.println("Enter message to server. Max. 2048 lines. Use \"!done\" to send.");
                             String message = clientClip.message();
 
-                            server.write(message.getBytes(StandardCharsets.UTF_8));
+                            client.write(message.getBytes(StandardCharsets.UTF_8));
                             System.out.println("Your message has been sent to the client.");
                             System.out.println("----------------------------------------\n");
                             
@@ -303,7 +322,9 @@ public class MessagerMain {
                     System.out.println("Disconnected from server.");
                     
                     // Close client
-                    client.close();
+                    if (client != null) {
+                        client.close();   
+                    }
                     
                     // Rest loop
                     next = Action.NONE;

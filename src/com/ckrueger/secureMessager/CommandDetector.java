@@ -20,7 +20,7 @@ public class CommandDetector extends Thread {
     public CommandDetector(CLInputParser clip)
     {
         this.commandReceived = false;
-        this.clip = clip; // Yes, I know this is unsafe
+        this.clip = new CLInputParser(System.in); // Yes, I know this is unsafe
     }
     
     /**

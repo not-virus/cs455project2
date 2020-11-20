@@ -29,6 +29,7 @@ public class ServerRunner extends Thread {
     
     public void close() {
         this.end = true;
+        this.serverReady = false;
     }
 
     @Override
