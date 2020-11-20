@@ -12,6 +12,8 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.security.*;
+import java.security.spec.InvalidKeySpecException;
+
 import javax.crypto.*;
 import java.lang.Runtime;
 
@@ -22,25 +24,94 @@ public class MessagerMain {
         ACCEPT_CONNECTION,
         CONNECT_TO_HOST,
         LOAD_KEYS,
+        SAVE_KEYS,
+        GENERATE_KEYS,
         AUTH,
+        
         HELP,
         QUIT
     }
     
     private static String localAddress;
     private static int localPort = 3001;
-    // Input Scanner
-    //private static Scanner input = new Scanner(System.in);
+    private final static String DEFAULT_KEY_FILE_PATH =
+            "C:\\Workspaces\\JavaProjects\\secureMessenger\\key_files";
+        //System.getProperty("user.home")+ File.separator + ".ssh"
+        //+ File.separator;
+    private final static String DEFAULT_PRIVATE_KEY_FILE_NAME = "key_rsa";
+    private final static String DEFAULT_PUBLIC_KEY_FILE_NAME = "key_rsa.pub";
+    
+    private final static String DEFAULT_REMOTE_KEY_FILE_PATH =
+            "C:\\Workspaces\\JavaProjects\\secureMessenger\\key_files";
+        //System.getProperty("user.home")+ File.separator + ".ssh"
+        //+ File.separator;
+    private final static String DEFAULT_REMOTE_PUBLIC_KEY_FILE_NAME = "remote_key_rsa.pub";
+    private final static byte[] PK_MESSAGE_PREFIX = {0x01, 'P', 'r', 'i', 'v', 'K', 'e', 'y', 0x02};
 
 	public static void main(String[] args) throws Exception {
 	    
 	    // RSACipher class for encryption and decryption 
 	    RSACipher rsa = new RSACipher();
 
-	    // Key pair generation and management
-	    RSAKeyPairManager keyMgr = new RSAKeyPairManager(2048);
-
 	    System.out.println("   --- Welcome to CKSM v1.0 ---   ");
+	    
+	    CLInputParser mainClip = new CLInputParser(System.in);
+	    
+	    // Load RSA keys from file
+	    RSAKeyPairManager rsakpm = loadKeys();
+	    
+	    // Handle load failure
+	    boolean loadRetry = true;
+	    while (rsakpm == null && loadRetry == true) {
+	        System.out.println("Failed to load one or both keys from files.");
+	        System.out.println("You can try to load the keys again or generate new keys.");
+	        System.out.println("Would you like to try again? (y/n)");
+	        loadRetry = mainClip.yesNo();
+	        
+	        if (loadRetry) {
+	            rsakpm = loadKeys();
+	        }
+	    }
+	    
+	    // If keys were not loaded and user chooses not to try again, generate new keys
+	    if (rsakpm == null) {
+	        System.out.println("You have chosen to generate new keys.");
+	        System.out.println("Generating new keys...");
+	        rsakpm = new RSAKeyPairManager(2048);
+	        
+	        // If still unable to generate keys, terminate. Something is wrong!
+	        if (!rsakpm.privateKeySet() || !rsakpm.publicKeySet()) {
+	            System.out.println("FATAL ERROR: Failed to generate new key " +
+	                    "pair of size " + 2048 + "bits.");
+	            System.out.println("Terminating...");
+	            System.exit(1);
+	        }
+	        
+	        System.out.println("Successfully generated new key pair.");
+	        System.out.println("Would you like to save these keys?");
+	        boolean save = mainClip.yesNo();
+	        
+	        if (save) {
+	            boolean saveSuccess = saveKeys(rsakpm);
+	            
+	            // Retry until success or skip
+	            boolean saveRetry = true;
+	            while (!saveSuccess && saveRetry) {
+	                System.out.println("Failed to save keys. Retry? (y/n)");
+	                saveRetry = mainClip.yesNo();
+	                
+	                if (saveRetry) {
+	                    saveSuccess = saveKeys(rsakpm);   
+	                } else {
+	                    System.out.println("Skipping. Keys will not be saved.");
+	                }
+	            }
+	        }
+	    }
+	    
+	    // Key pair generation and management
+        RSAKeyPairManager keyMgr = new RSAKeyPairManager(2048);
+        
 	    System.out.println("Type !help for a list of commands.");
 	    
 	    // Start server on port 3000
@@ -50,8 +121,8 @@ public class MessagerMain {
 	    serverThread.setName("Server");
 	    serverThread.start();
 	    
-	    System.out.println("Started local server.");
-	    System.out.println("Listening for connections on port " + localPort);
+	    System.out.println("\n----------------------------------------");
+	    System.out.println("Started local server. Listening for connections on port " + localPort);
 	    System.out.println("Use \"!connect\" to connect to a remote host.");
 	    
 	    // Attempt to release port if shutdown unexpectedly
@@ -114,9 +185,19 @@ public class MessagerMain {
                     next = NextAction.AUTH;
                     break;
                 }*/
-                else if (commandThread.getCommand().command == CLToken.Commands.LOAD) {
-                    next = Action.LOAD_KEYS;
+                else if (commandThread.getCommand().command == CLToken.Commands.GENERATE) {
+                    next = Action.GENERATE_KEYS;
                     break;
+                }
+                else if (commandThread.getCommand().command == CLToken.Commands.SAVE) {
+                    System.out.println("This functionality has not yet been implemented!");
+                    //next = Action.SAVE_KEYS;
+                    //break;
+                }
+                else if (commandThread.getCommand().command == CLToken.Commands.LOAD) {
+                    System.out.println("This functionality has not yet been implemented!");
+                    //next = Action.LOAD_KEYS;
+                    //break;
                 }
                 else if (commandThread.getCommand().command == CLToken.Commands.QUIT) {
                     next = Action.QUIT;
@@ -133,6 +214,43 @@ public class MessagerMain {
                 // CLInputParser for server connection
                 CLInputParser serverClip = new CLInputParser(System.in);
                 CommandDetector serverCT = new CommandDetector();
+                
+                System.out.println("Would you like to authenticate the client? (y/n)");
+                boolean authClient = serverClip.yesNo();
+                
+                RSAPublicKeyManager rpkm = null;
+                
+                if (authClient) {
+                    rpkm = loadRemotePublic();
+                    
+                    // Authenticate using a PublicKey as a randomly generated string of bytes
+                    byte[] authData = new RSAKeyPairManager(2048).getPublicKey().getEncoded();
+                    
+                    // Encrypt with remote host's public key
+                    byte[] authDataEnc = null;
+                    try {
+                        authDataEnc = rsa.encrypt(authData, keyMgr.getPublicKey());
+                    } catch (InvalidKeyException e) {
+                        System.out.println("ERROR: Public key not valid for encryption");
+                        e.printStackTrace();
+                    }
+                    
+                    // Send our public key
+                    byte[] pkMessage = new byte[PK_MESSAGE_PREFIX.length + authDataEnc.length];
+                    System.arraycopy(PK_MESSAGE_PREFIX, 0, pkMessage, 0, PK_MESSAGE_PREFIX.length);
+                    System.arraycopy(authDataEnc, 0, pkMessage, PK_MESSAGE_PREFIX.length, authDataEnc.length);
+                    server.write(pkMessage);
+                    
+                    byte[] authResponseEnc = server.readAllBytes();
+                    byte[] authResponse = rsa.decrypt(authResponseEnc, rsakpm.getPrivateKey());
+                    
+                    if (!(authResponse == authData)) {
+                        System.out.println("ERROR: Failed to authenticate server.");
+                    } else {
+                        System.out.println("Successfully authenticated server.");
+                    }                    
+                }
+                
                 
                 System.out.println("Connected to client.");                
                 System.out.println("Awaiting message from client...");
@@ -251,15 +369,6 @@ public class MessagerMain {
                         serverPort = clientClip.port();
                     }
                     
-                    System.out.println("Authenticate server using RSA public key? (y/n)");
-                    boolean authenticateServer = clientClip.yesNo();
-                    
-                    // FIXME Need to add a conditional block in here which executes if authFlag is true
-                    //  Will need to obtain server's public key, encrypt a message with it, then see if server can decrypt, re-encrypt and return
-                    if (authenticateServer) {
-                        // FIXME
-                    }
-                    
                     System.out.println("Attempting connection to " + serverAddress + " on port " + serverPort + " ...");
                     
                     // Establish a connection to the server
@@ -278,6 +387,48 @@ public class MessagerMain {
                 if (client != null)
                 {
                     System.out.println("Connected to " + serverAddress + ":" + serverPort + ".");
+                    
+                    
+                    // Get server's public key
+                    RSAPublicKeyManager serverRpkm = null;
+                    
+                    byte[] serverPKMessage = client.readAllBytes();
+                    
+                    // Verify it's the public key message
+                    boolean pkMessageValid = true;
+                    for (int i = 0; i < PK_MESSAGE_PREFIX.length; i++) {
+                        if (!(serverPKMessage[i] == PK_MESSAGE_PREFIX[i])) {
+                            pkMessageValid = false;
+                        }
+                    }
+                    
+                    // If message format not recognized, notify and skip authentication, else continue
+                    if (!pkMessageValid) {
+                        System.out.println("ERROR: Invalid public key transmission from server.");
+                        System.out.println(new String(serverPKMessage, StandardCharsets.UTF_8));
+                        System.out.println("NOTICE: Skipping server authentication.");
+                    } else {
+                        byte[] serverPrivateKeyEncoded = new byte[serverPKMessage.length - PK_MESSAGE_PREFIX.length];
+                        System.arraycopy(serverPKMessage, PK_MESSAGE_PREFIX.length, serverPrivateKeyEncoded, 0, serverPKMessage.length - PK_MESSAGE_PREFIX.length);
+                        serverRpkm.loadKey(serverPrivateKeyEncoded);
+                        
+                        // Now that we have the server's private key, get the server's
+                        //  authentication message, decrypt, re-encrypt and send
+                        byte[] authMessageEnc = client.readAllBytes();
+                        byte[] authMessage = rsa.decrypt(authMessageEnc, rsakpm.getPrivateKey());
+                        byte[] returnAuthEnc = rsa.encrypt(authMessage, serverRpkm.getKey());
+                        client.write(returnAuthEnc);
+                        
+                        System.out.println("Returned authentication message. Awaiting response from server...");
+                        
+                        if (client.readAllBytes() == "Secured".getBytes())
+                        {
+                            System.out.println("Auccessfully authenticated server.");
+                        } else {
+                            System.out.println("ERROR: Failed to authenticate server");
+                        }
+                    }
+                    
                     System.out.println("\n----------------------------------------");
                     
                     CommandDetector clientCT = new CommandDetector();
@@ -368,12 +519,59 @@ public class MessagerMain {
                     // Rest loop
                     next = Action.NONE;
                 } else {
-                    System.err.println("ERROR: Server still null.");
+                    System.err.println("ERROR: Server object still null.");
                     System.out.println("Terminating...");
                     next = Action.QUIT;
                 }
-            }   
+            }
             
+  // ##### MANUAL KEYPAIR GENERATION #####
+            else if (next == Action.GENERATE_KEYS) {
+                CLInputParser genClip = new CLInputParser(System.in);
+                
+                // Confirm
+                System.out.println("You have chosen to generate new keys.");
+                System.out.println("Are you sure? (y/n)");
+                boolean proceed = genClip.yesNo();
+                
+                // If user confirms, generate new keys
+                if (proceed) {
+                    System.out.println("Generating new keys...");
+                    rsakpm = new RSAKeyPairManager(2048);
+                    
+                    // If still unable to generate keys, terminate. Something is wrong!
+                    if (!rsakpm.privateKeySet() || !rsakpm.publicKeySet()) {
+                        System.out.println("FATAL ERROR: Failed to generate new key " +
+                                "pair of size " + 2048 + "bits.");
+                        System.out.println("Terminating...");
+                        System.exit(1);
+                    }
+                    
+                    System.out.println("Successfully generated new key pair.");
+                    System.out.println("Would you like to save these keys?");
+                    boolean save = mainClip.yesNo();
+                    
+                    if (save) {
+                        boolean saveSuccess = saveKeys(rsakpm);
+                        
+                        // Retry until success or skip
+                        boolean saveRetry = true;
+                        while (!saveSuccess && saveRetry) {
+                            System.out.println("Failed to save keys. Retry? (y/n)");
+                            saveRetry = mainClip.yesNo();
+                            
+                            if (saveRetry) {
+                                saveSuccess = saveKeys(rsakpm);   
+                            } else {
+                                System.out.println("Skipping. Keys will not be saved.");
+                            }
+                        }
+                    }
+                } 
+                
+                // Rest loop
+                next = Action.NONE;  
+            }
         }
         
         System.out.println("Goodbye.");
@@ -425,5 +623,249 @@ public class MessagerMain {
 		System.out.println("Done");
 		
 		//input.close();        
+	}
+	
+	
+	public static RSAKeyPairManager loadKeys() throws IOException {
+	    // Get directory in which RSA key files are stored
+        System.out.println("RSA key files location? (default: " + DEFAULT_KEY_FILE_PATH + ")");
+        CLInputParser fileInput = new CLInputParser(System.in);
+        String keyFilePath = fileInput.dirPath();
+        
+        // If user did not provide a path, use default path
+        if (keyFilePath == "") {
+            keyFilePath = DEFAULT_KEY_FILE_PATH;
+            if (!new File(keyFilePath).isDirectory()) {
+                boolean created = new File(keyFilePath).mkdirs();
+                if (!created) {
+                    System.out.println("Directory " + keyFilePath + " not found and could not be created.");
+                    System.out.println("Keys cannot be loaded.");
+                    return null;
+                }
+            }
+        }
+        
+        
+        
+        // Get private key file name
+        System.out.println("Private key file name? (default: " + DEFAULT_PRIVATE_KEY_FILE_NAME + ")");
+        String privateKeyFilePath = fileInput.filePath(keyFilePath);
+        
+        // If user did not provide a name, use default
+        if (privateKeyFilePath.contentEquals(keyFilePath)) {
+            privateKeyFilePath += File.separator + DEFAULT_PRIVATE_KEY_FILE_NAME;
+        }
+        
+        // Get public key file name
+        System.out.println("Public key file name? (default: " + DEFAULT_PUBLIC_KEY_FILE_NAME + ")");
+        String publicKeyFilePath = fileInput.filePath(keyFilePath);
+        
+        // If user did not provide a name, use default
+        if (publicKeyFilePath.contentEquals(keyFilePath)) {
+            publicKeyFilePath += File.separator + DEFAULT_PUBLIC_KEY_FILE_NAME;
+        }
+        
+        // RSA key pair manager
+        RSAKeyPairManager rkpm = new RSAKeyPairManager();
+        
+        // Try to load private key
+        //System.out.println("Attempting to load private key from " + privateKeyFilePath + "...");
+        try {
+            rkpm.loadPrivate(privateKeyFilePath);
+        } catch (InvalidKeySpecException e) {
+            System.out.println("ERROR: The private key file was not in the correct format.");
+        } catch (IOException e) {
+            //System.out.println("ERROR: I/O Error accessing private key file.");
+        }
+        
+        // Notify of success or failure
+        if (rkpm.privateKeySet()) {
+            System.out.println("Successfully loaded private key from " + privateKeyFilePath + ".");
+        } else {
+            System.out.println("ERROR: Failed to load private key from " + privateKeyFilePath + ".");
+        }
+        
+        // Try to load public key
+        //System.out.println("Attempting to load public key from " + publicKeyFilePath + "...");       
+        try {
+            rkpm.loadPublic(publicKeyFilePath);
+        } catch (InvalidKeySpecException e) {
+            System.out.println("ERROR: The public key file was not in the correct format.");
+        } catch (IOException e) {
+            //System.out.println("ERROR: I/O Error accessing public key file.");
+        }
+        
+        // Notify of success or failure
+        if (rkpm.publicKeySet()) {
+            System.out.println("Successfully loaded public key from " + publicKeyFilePath + ".");
+        } else {
+            System.out.println("ERROR: Failed to load public key from " + publicKeyFilePath + ".");
+        }
+        
+        if (rkpm.publicKeySet() && rkpm.privateKeySet()) {
+            return rkpm;
+        } else {
+            return null;
+        }        
+	}
+	
+	public static RSAPublicKeyManager loadRemotePublic() throws IOException {
+        // Get directory in which RSA key file is stored
+        System.out.println("RSA key file location? (default: " + DEFAULT_REMOTE_KEY_FILE_PATH + ")");
+        CLInputParser fileInput = new CLInputParser(System.in);
+        String keyFilePath = fileInput.dirPath();
+        
+        // If user did not provide a path, use default path
+        if (keyFilePath == "") {
+            keyFilePath = DEFAULT_KEY_FILE_PATH;
+            if (!new File(keyFilePath).isDirectory()) {
+                boolean created = new File(keyFilePath).mkdirs();
+                if (!created) {
+                    System.out.println("Directory " + keyFilePath + " not found and could not be created.");
+                    System.out.println("Keys cannot be loaded.");
+                    return null;
+                }
+            }
+        }
+        
+        // Get public key file name
+        System.out.println("Public key file name? (default: " + DEFAULT_REMOTE_PUBLIC_KEY_FILE_NAME + ")");
+        String publicKeyFilePath = fileInput.filePath(keyFilePath);
+        
+        // If user did not provide a name, use default
+        if (publicKeyFilePath.contentEquals(keyFilePath)) {
+            publicKeyFilePath += File.separator + DEFAULT_REMOTE_PUBLIC_KEY_FILE_NAME;
+        }
+        
+        // RSA public key manager
+        RSAPublicKeyManager rpkm = new RSAPublicKeyManager();
+        
+        // Try to load public key
+        //System.out.println("Attempting to load remote host's public key from " + publicKeyFilePath + "...");       
+        try {
+            rpkm.loadKey(publicKeyFilePath);
+        } catch (InvalidKeySpecException e) {
+            System.out.println("ERROR: The remote host's public key file was not in the correct format.");
+        } catch (IOException e) {
+            //System.out.println("ERROR: I/O Error accessing remote host's public key file.");
+        }
+        
+        // Notify of success or failure
+        if (rpkm.keySet()) {
+            System.out.println("Successfully loaded remote host's public key from " + publicKeyFilePath + ".");
+        } else {
+            System.out.println("ERROR: Failed to load remote host's public key from " + publicKeyFilePath + ".");
+        }
+        
+        if (rpkm.keySet()) {
+            return rpkm;
+        } else {
+            return null;
+        }        
+    }
+	
+	public static boolean saveKeys(RSAKeyPairManager rkpm) throws IOException {
+	    // Return value
+	    boolean success = false;
+	    
+	    // Get directory in which to save RSA key files
+        System.out.println("RSA key files location? (default: " + DEFAULT_KEY_FILE_PATH + ")");
+        CLInputParser fileInput = new CLInputParser(System.in);
+        String keyFilePath = fileInput.dirPath();
+        
+        // If user did not provide a path, use default path
+        if (keyFilePath == "") {
+            keyFilePath = DEFAULT_KEY_FILE_PATH;
+        }
+        
+    // GET PRIVATE KEY FILE NAME
+        String privateKeyFilePath = null;
+        
+        // Retry until desired path is set
+        boolean privatePathSet = false;
+        while (!privatePathSet) {
+            // Get private key file name
+            System.out.println("Private key file name? (default: " + DEFAULT_PRIVATE_KEY_FILE_NAME + ")");
+            privateKeyFilePath = fileInput.filePath(keyFilePath);
+            
+            // If user did not provide a name, use default
+            if (privateKeyFilePath.contentEquals(keyFilePath)) {
+                privateKeyFilePath += File.separator + DEFAULT_PRIVATE_KEY_FILE_NAME;
+            }
+            
+            // If file exists, ask to overwrite
+            if (new File(privateKeyFilePath).exists()) {
+                System.out.println("File " + privateKeyFilePath + "exists.");
+                System.out.println("Overwrite? (y/n)");
+                privatePathSet = fileInput.yesNo();
+            } else {
+                privatePathSet = true;
+            }
+	    }
+        
+
+    // GET PUBLIC KEY FILE NAME
+        String publicKeyFilePath = null;
+        
+        // Retry until desired path is set
+        boolean publicPathSet = false;
+        while (!publicPathSet) {
+            // Get public key file name
+            System.out.println("Public key file name? (default: " + DEFAULT_PUBLIC_KEY_FILE_NAME + ")");
+            publicKeyFilePath = fileInput.filePath(keyFilePath);
+            
+            // If user did not provide a name, use default
+            if (publicKeyFilePath.contentEquals(keyFilePath)) {
+                publicKeyFilePath += File.separator + DEFAULT_PUBLIC_KEY_FILE_NAME;
+            }
+            
+            // If file exists, ask to overwrite
+            if (new File(publicKeyFilePath).exists()) {
+                System.out.println("File " + publicKeyFilePath + "exists.");
+                System.out.println("Overwrite? (y/n)");
+                publicPathSet = fileInput.yesNo();
+            } else {
+                publicPathSet = true;
+            }
+        }
+        
+    // SAVE PRIVATE KEY FILE	
+	    // Attempt to save private key file
+	    System.out.println("Attempting to save public key file at " + privateKeyFilePath + "...");
+	    boolean writePrivateSuccess = false;
+	    try {
+	        rkpm.writePrivate(privateKeyFilePath);
+	        writePrivateSuccess = true;
+	    } catch (IOException e) {
+	        System.out.println("ERROR: Failed to save private key file.");
+	    }
+	    
+	    // Notify success
+	    if (writePrivateSuccess) {
+	        System.out.println("Successfully saved private key file to " + privateKeyFilePath + ".");
+	    } else {
+	        //System.out.println("ERROR: Unknown error. Failed to save private key file.");
+	    }
+    
+    // SAVE PUBLIC KEY FILE
+        // Attempt to save public key file
+        System.out.println("Attempting to save public key file at " + publicKeyFilePath + "...");
+        boolean writePublicSuccess = false;
+        try {
+            rkpm.writePublic(publicKeyFilePath);
+            writePublicSuccess = true;
+        } catch (IOException e) {
+            System.out.println("ERROR: Failed to save public key file.");
+        }
+        
+        // Notify success
+        if (writePublicSuccess) {
+            System.out.println("Successfully saved public key file to " + publicKeyFilePath + ".");
+        } else {
+            //System.out.println("ERROR: Unknown error. Failed to save public key file.");
+        }
+        
+        success = writePrivateSuccess && writePublicSuccess;
+        return success;
 	}
 }

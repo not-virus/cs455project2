@@ -11,23 +11,21 @@ public class RSAKeyPairManager {
     private PrivateKey privateKey = null;
 
     /**
-     * Automatically generates and manages a public and private key pair. This class
-     * is similar to KeyPair, but specifically for RSA keys, and generates the keys
-     * automatically. Will automatically generate keys upon instantiation and can be
-     * used to save and load keys from a file. Default key size is 2048 bits
+     * Manages a public and private key pair, much like KeyPair, but
+     * specifically for RSA. Keys must be individually loaded from key files
+     * or generated with the generateKeyPair method before this class can be
+     * used.
      */
     public RSAKeyPairManager() {
-        KeyPair keyPair = generateKeyPair(2048);
-
-        this.privateKey = keyPair.getPrivate();
-        this.publicKey = keyPair.getPublic();
+        this.privateKey = null;
+        this.publicKey = null;
     }
 
     /**
-     * Manages a public and private key pair, much like KeyPair, but specifically
-     * for RSA. Will automatically generate keys upon instantiation and can be used
-     * to save and load keys from a file.
-     * 
+     * Manages a public and private key pair, much like KeyPair, but
+     * specifically for RSA. Will automatically generate keys of size keySize
+     * bits upon instantiation and can be used to save and load keys from a
+     * file.
      * @param keySize the desired size of the RSA keys in bits
      */
     public RSAKeyPairManager(int keySize) {
@@ -52,33 +50,78 @@ public class RSAKeyPairManager {
     }
 
     /**
-     * @param filePath path to write the private key file to
-     * @throws IOException
+     * @return true if the private key has been set, else false
      */
-    public void writePrivate(Path filePath) throws IOException {
-        FileOutputStream file = new FileOutputStream(filePath + ".key");
+    public boolean privateKeySet() {
+        return this.privateKey != null;
+    }
+
+    /**
+     * @return true if the public key has been set, else false
+     */
+    public boolean publicKeySet() {
+        return this.publicKey != null;
+    }
+
+    /**
+     * Writes a PKCS8 encoded private key to a file, deleting the file if it
+     * already exists, and creating a new file
+     * @param filePath path to write the private key file to
+     * @throws IOException if unable to write key to file
+     */
+    public void writePrivate(String filePath) throws IOException {
+        // Create file if it doesn't exist, if it does, delete and create new
+        File tmpFileObj = new File(filePath);
+        if (!tmpFileObj.exists()) {
+            tmpFileObj.createNewFile();
+        } else {
+            tmpFileObj.delete();
+            tmpFileObj.createNewFile();
+        }
+        
+        // Write key to file
+        FileOutputStream file = new FileOutputStream(filePath);
         file.write(this.privateKey.getEncoded());
         file.close();
     }
 
     /**
+     * Writes a X509 encoded public key to a file, deleting the file if it
+     * already exists, and creating a new file
      * @param filePath path to write the public key file to
-     * @throws IOException
+     * @throws IOException if unable to write key to file
      */
-    public void writePublic(Path filePath) throws IOException {
-        FileOutputStream file = new FileOutputStream(filePath + ".pub");
+    public void writePublic(String filePath) throws IOException {
+        // Public key file name must end with .pub
+        if (!filePath.endsWith(".pub")) {
+            filePath = filePath + ".pub";
+        }
+        
+        // Create file if it doesn't exist, if it does, delete and create new
+        File tmpFileObj = new File(filePath);
+        if (!tmpFileObj.exists()) {
+            tmpFileObj.createNewFile();
+        } else {
+            tmpFileObj.delete();
+            tmpFileObj.createNewFile();
+        }
+        
+        // Write key to file
+        FileOutputStream file = new FileOutputStream(filePath);
         file.write(this.publicKey.getEncoded());
         file.close();
     }
 
     /**
+     * Loads a PKCS8 encoded private key from a file
      * @param filePath path to a PKCS8 encoded private keyFile
-     * @throws IOException
-     * @throws InvalidKeySpecException
+     * @throws IOException if unable to load key from file
+     * @throws InvalidKeySpecException if the key stored in the file is stored
+     * with the incorrect keyspec
      */
-    public void loadPrivate(Path filePath) throws IOException, InvalidKeySpecException {
+    public void loadPrivate(String filePath) throws IOException, InvalidKeySpecException {
         // Open FileInputStream on the public key file
-        FileInputStream keyFile = new FileInputStream(filePath + ".key");
+        FileInputStream keyFile = new FileInputStream(filePath + "");
 
         // Get file data in bytes
         byte[] fileData = keyFile.readAllBytes();
@@ -98,13 +141,19 @@ public class RSAKeyPairManager {
     }
 
     /**
+     * Loads a X509 encoded public key from a file
      * @param filePath path to a X509 encoded public keyFile
-     * @throws IOException
-     * @throws InvalidKeySpecException
+     * @throws IOException if unable to load key from file
+     * @throws InvalidKeySpecException if the key stored in the file is stored
+     * with the incorrect keyspec
      */
-    public void loadPublic(Path filePath) throws IOException, InvalidKeySpecException {
+    public void loadPublic(String filePath) throws IOException, InvalidKeySpecException {
+        // Public key file name must end with .pub
+        if (!filePath.endsWith(".pub")) {
+            filePath = filePath + ".pub";
+        }
         // Open FileInputStream on the public key file
-        FileInputStream keyFile = new FileInputStream(filePath + ".pub");
+        FileInputStream keyFile = new FileInputStream(filePath);
 
         // Get file data in bytes
         byte[] fileData = keyFile.readAllBytes();
@@ -122,25 +171,11 @@ public class RSAKeyPairManager {
             e.printStackTrace(); // Will never get here
         }
     }
-
-    /**
-     * @param privateKey a private RSA key
-     */
-    private void setPrivateKey(PrivateKey privateKey) {
-        this.privateKey = privateKey;
-    }
-
-    /**
-     * @param publicKey a public RSA key
-     */
-    private void setPublicKey(PublicKey publicKey) {
-        this.publicKey = publicKey;
-    }
-
+    
     /**
      * @return a secure RSA key pair
      */
-    private KeyPair generateKeyPair(int keySize) {
+    public KeyPair generateKeyPair(int keySize) {
         KeyPair keyPair = null;
 
         try {
@@ -158,4 +193,18 @@ public class RSAKeyPairManager {
         return keyPair;
     }
 
+    /**
+     * @param privateKey a private RSA key
+     */
+    private void setPrivateKey(PrivateKey privateKey) {
+        this.privateKey = privateKey;
+    }
+
+    /**
+     * @param publicKey a public RSA key
+     */
+    private void setPublicKey(PublicKey publicKey) {
+        this.publicKey = publicKey;
+    }
+    
 }

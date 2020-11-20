@@ -7,6 +7,7 @@ import com.ckrueger.secureMessager.CLToken.Commands;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 
 public class CLInputParser {
     
@@ -23,18 +24,130 @@ public class CLInputParser {
         this.input = new Scanner(is);
     }
     
+    /**
+     * Sets the value of the skipInput flag
+     * @param skip the value to which the skipInput flag should be set
+     */
     public void setSkip(boolean skip) {
         this.skipInput = skip;
     }
     
+    /**
+     * Sets the skipInput flag so the next read will not block
+     */
     public void close() {
         this.skipInput = true;
     }
     
     /**
+     * Filters a valid directory path
+     * @return a valid directory path name
+     * @throws IOException if unable to read user input from clIn
+     */
+    public String dirPath() throws IOException {
+        String out = null;
+        String in = clIn();
+        boolean valid = false;
+        String path = "";
+        
+        CLToken token = parse(in);
+        
+        while (!valid) {
+            if (token.isCommand) {
+                System.out.println(token.value + ": Commands not allowed at " +
+                        "this time.");
+            } else if (!token.value.contentEquals("")) {
+                // Construct full path
+                path = token.value;
+                
+                // Check to see if directory exists
+                valid = new File(path).isDirectory();
+                System.out.println("DEBUG: pathname" + path);
+                System.out.println("DEBUG: valid" + valid);
+                
+                // If invalid, notify
+                if (!valid) {
+                    System.out.println(path + ": Directory not found.");
+                    System.out.println("Would you like to make this directory?");
+                    
+                    // Attempt to make directory if it does not exist
+                    if (yesNo()) {
+                        boolean created = new File(path).mkdirs();
+                        if (created) {
+                            System.out.println("Created directory " + path + ".");
+                        } else {
+                            System.out.println("Failed to create directory.");
+                            
+                            // Get new path
+                            System.out.println("Directory path?");
+                            in = clIn();
+                            token = parse(in);
+                        }
+                        
+                    } else {
+                        // Get new path
+                        System.out.println("Directory path?");
+                        in = clIn();
+                        token = parse(in);
+                    }
+                }
+            } else {
+                // Return empty string and let caller handle it
+                path = "";
+                valid = true;
+            }
+        }
+        
+        out = path;
+        return out;
+    }
+    
+    /**
+     * Filters a valid file name
+     * @param rootPath the directory in which to search for the file
+     * @return a valid file path name
+     * @throws IOException if unable to read user input from clIn
+     */
+    public String filePath(String rootPath) throws IOException {
+        String out = null;
+        String in = clIn();
+        boolean valid = false;
+        String path = "";
+        
+        CLToken token = parse(in);
+        
+        while (!valid) {
+            if (token.isCommand) {
+                System.out.println(token.value + ": Commands not allowed at " +
+                        "this time.");
+            } else if (!token.value.contentEquals("")) {
+                // Construct full path
+                path = rootPath + File.separator + token.value;
+                
+                // Check to see if directory exists
+                valid = new File(path).exists();
+                
+                // If invalid, notify
+                if (!valid) {
+                    System.out.println(path + ": File not found.");
+                    in = clIn();
+                    token = parse(in);
+                }
+            } else {
+                path = rootPath + "";
+                valid = true;
+            }
+        }
+        
+        out = path;
+        
+        return out;
+    }    
+    
+    /**
      * Filters a valid IP address from the command line
      * @return an IP address
-     * @throws IOException 
+     * @throws IOException if unable to read user input from clIn
      */
     public String ipAddress() throws IOException {
         String in;// = clin();
@@ -83,7 +196,7 @@ public class CLInputParser {
     /**
      * Filters a valid port number from the command line
      * @return a port number
-     * @throws IOException 
+     * @throws IOException if unable to read user input from clIn
      */
     public int port() throws IOException {
         String in;
@@ -121,8 +234,9 @@ public class CLInputParser {
     }
     
     /**
-     * @return
-     * @throws IOException 
+     * Filters affirmation or refutation from user input
+     * @return true if user enters affirmation, else false
+     * @throws IOException if unable to read user input from clIn
      */
     public boolean yesNo() throws IOException {
         String in;
@@ -157,6 +271,11 @@ public class CLInputParser {
         return Pattern.matches(yesRegex, token.value);        
     }
     
+    /**
+     * Filters a potentially multiple-line message from user input
+     * @return a string containing a message entered by the user
+     * @throws IOException if unable to read user input from clInMulti
+     */
     public String message() throws IOException {
         String[] in;
         String out = "";
@@ -196,7 +315,7 @@ public class CLInputParser {
     /**
      * Filters a command from the command line
      * @return a cksm command
-     * @throws IOException 
+     * @throws IOException if unable to read user input from clIn
      */
     public CLToken command() throws IOException {
         // Get input
@@ -246,6 +365,10 @@ public class CLInputParser {
                 token = new CLToken(CLToken.Commands.AUTH, in);
             } else if (tmp.equals("load")) {
                 token = new CLToken(CLToken.Commands.LOAD, in);
+            } else if (tmp.equals("keygen")) {
+                token = new CLToken(CLToken.Commands.GENERATE, in);
+            } else if (tmp.equals("save")) {
+                token = new CLToken(CLToken.Commands.SAVE, in);
             } else if (tmp.equals("done")) {
                 token = new CLToken(CLToken.Commands.DONE, in);
             } else if (tmp.equals("quit")) {
@@ -272,7 +395,7 @@ public class CLInputParser {
     /**
      * Wrapper for Scanner.hasNext()
      * @return true if there is new user input to be read
-     * @throws IOException 
+     * @throws IOException if unable to read user input from clIn
      */
     /*public int available() throws IOException {
         return input.available();
@@ -281,7 +404,8 @@ public class CLInputParser {
     /**
      * Takes input from user by prefixing line with "cksm> " prompt
      * @return the line the user entered
-     * @throws IOException 
+     * @throws IOException if unable to read user input from Scanner open on
+     *  System.in 
      */
     private String clIn() throws IOException {
         // Print prompt
@@ -324,7 +448,8 @@ public class CLInputParser {
      * Takes multiple lines of input from user by prefixing block with "cksm#"
      * prompt
      * @return the lines the user entered
-     * @throws IOException 
+     * @throws IOException if unable to read user input from Scanner open on
+     *  System.in 
      */
     private String[] clMulti() throws IOException {
         // Print prompt

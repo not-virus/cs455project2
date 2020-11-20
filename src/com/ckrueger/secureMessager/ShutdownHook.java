@@ -32,13 +32,13 @@ public class ShutdownHook extends Thread {
             try {
                 this.server.close();
             } catch (IOException e) {
-                System.err.println("ERROR: Could not close local server");
+                System.err.println("ERROR: Failed to close local server.");
                 e.printStackTrace();
             } catch (NullPointerException e) {
-                System.out.println("Shutdown hook: ERROR: Server null but also not null");
+                System.out.println("ERROR: Server null but also not null.");
             }
         } else {
-            System.out.println("Shutdown hook: Local server closed successfully.");
+            System.out.println("Local server closed successfully.");
         }
             
     }

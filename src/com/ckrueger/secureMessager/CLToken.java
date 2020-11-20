@@ -13,6 +13,8 @@ public class CLToken {
         HOST,
         AUTH,
         LOAD,
+        SAVE,
+        GENERATE,
         OVER,
         DONE,
         QUIT,
