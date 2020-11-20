@@ -34,14 +34,14 @@ public class MessagerMain {
     
     private static String localAddress;
     private static int localPort = 3001;
-    private final static String DEFAULT_KEY_FILE_PATH = File.separator + "key_files";
+    private final static String DEFAULT_KEY_FILE_PATH = "." + File.separator + "key_files";
             //"C:\\Workspaces\\JavaProjects\\secureMessenger\\key_files";
         //System.getProperty("user.home")+ File.separator + ".ssh"
         //+ File.separator;
     private final static String DEFAULT_PRIVATE_KEY_FILE_NAME = "key_rsa";
     private final static String DEFAULT_PUBLIC_KEY_FILE_NAME = "key_rsa.pub";
     
-    private final static String DEFAULT_REMOTE_KEY_FILE_PATH = File.separator + "remote_key_files";
+    private final static String DEFAULT_REMOTE_KEY_FILE_PATH = "." + File.separator + "remote_key_files";
             //"C:\\Workspaces\\JavaProjects\\secureMessenger\\remote_key_files";
         //System.getProperty("user.home")+ File.separator + ".ssh"
         //+ File.separator;
