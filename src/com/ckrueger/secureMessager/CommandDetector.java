@@ -1,7 +1,10 @@
 package com.ckrueger.secureMessager;
 
+import java.io.IOException;
 import java.lang.System;
 import java.util.Scanner;
+
+import com.ckrueger.secureMessager.CLToken.Commands;
 
 /**
  * @author black
@@ -10,40 +13,45 @@ import java.util.Scanner;
 public class CommandDetector extends Thread {
     
     private boolean commandReceived = false;
-    //private boolean canExit = false;
     private CLToken command = new CLToken(CLToken.Commands.NONE, null);
-    private CLInputParser clcli;
+    private CLInputParser clip;
     
     
-    public CommandDetector(CLInputParser clcli)
+    public CommandDetector(CLInputParser clip)
     {
         this.commandReceived = false;
-        this.clcli = clcli; // Yes, I know this is unsafe
+        this.clip = clip; // Yes, I know this is unsafe
     }
     
+    /**
+     * Waits for user input or instructions to exit.
+     * Reads command from user input and stores in command
+     */
     public void waitForInput() {
-        // Get next token
-        CLToken cmd;
-        cmd = clcli.command();
+        CLToken cmd = null;
         
-        /*while (cmd.command == CLToken.Commands.NONE
-                || cmd.command == CLToken.Commands.INVALID) {
-            if (cmd.command == CLToken.Commands.INVALID) {
-                System.out.println(cmd.value + ": command not recognized.");
-            }
-            cmd = clcli.command();
-        }*/
+        try {
+            cmd = clip.command();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         
+        // Ultra hacky way of skipping input
         command = cmd;
-        commandReceived = true;
+        if (command.command == Commands.CANCEL) {
+            commandReceived = false;  // remains false, input was cancelled.
+        } else {
+            commandReceived = true;
+        }
     }
     
     /**
      * Sets a flag which allows the thread to die
      */
-    /*public void close() {
-        this.canExit = true;
-    }*/
+    public void close() {
+        this.clip.close();
+    }
     
     /**
      * @return true if a valid command has been received
@@ -62,12 +70,6 @@ public class CommandDetector extends Thread {
     
    public void run() {
        waitForInput();
-       
-       // Loop until closed
-       /*while (!canExit) {
-           waitForInput();
-       }*/
-       
    }
 
 }

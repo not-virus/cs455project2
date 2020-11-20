@@ -9,9 +9,15 @@ public class CLToken {
     public static enum Commands {
         HELP,
         CONNECT,
+        DISCONNECT,
         HOST,
+        AUTH,
+        LOAD,
+        OVER,
         DONE,
         QUIT,
+        CANCEL,
+        MESSAGE,
         INVALID,
         NONE
     }

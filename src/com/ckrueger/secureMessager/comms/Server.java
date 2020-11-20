@@ -50,18 +50,34 @@ public class Server {
     }
         
     /**
-     * @param port a port to which the server socket should be attached
+     * @param port a port to which the server socket should be bound
      */
     public void setPort(int port) {
         this.port = port;
     }
     
     /**
-     * @return the public IP address of the server
+     * @return the public IP address of this server
      */
     public String getAddress() {
         return address;
     }    
+    
+    /**
+     * @return the IP address of the client connected to this server
+     */
+    public String getRemoteAddress() {
+        return this.serverSocket.getInetAddress().toString();
+    }
+    
+    /**
+     * @return returns an approximate number of bytes available for reading
+     * from dataInput
+     * @throws IOException 
+     */
+    public int available() throws IOException {
+        return dataInput.available();
+    }
     
     /**
      * @param data bytes to send to client

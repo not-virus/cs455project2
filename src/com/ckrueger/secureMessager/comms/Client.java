@@ -62,6 +62,15 @@ public class Client {
     }
     
     /**
+     * @return returns an approximate number of bytes available for reading
+     * from dataInput
+     * @throws IOException 
+     */
+    public int available() throws IOException {
+        return dataInput.available();
+    }
+    
+    /**
      * @param data bytes to send to server
      * @throws IOException
      */
