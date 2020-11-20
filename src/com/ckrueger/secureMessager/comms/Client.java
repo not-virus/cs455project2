@@ -78,7 +78,7 @@ public class Client {
     public void write(byte[] data) throws IOException {
         // Write bytes to client
         dataOutput.write(data);
-        dataOutput.write(-1);
+        dataOutput.write(3);
         dataOutput.flush();
     }
     
@@ -101,7 +101,7 @@ public class Client {
         // Read len bytes from input stream OR up to BUFFER_SIZE
         int readCount = 0;
         int currentByte = 0;
-        while (readCount < READ_BUFFER_SIZE && readCount < len && (currentByte = dataInput.read()) != -1) {
+        while (readCount < READ_BUFFER_SIZE && readCount < len && (currentByte = dataInput.read()) != 3) {
             receivedData[readCount] = (byte) currentByte;
             readCount++;
         }
@@ -129,7 +129,7 @@ public class Client {
         // Read available bytes                
         int readCount = 0;
         int currentByte = 0;
-        while (readCount < READ_BUFFER_SIZE && (currentByte = dataInput.read()) != -1) {
+        while (readCount < READ_BUFFER_SIZE && (currentByte = dataInput.read()) != 3) {
             receivedData[readCount] = (byte) currentByte;
             readCount++;
         }
