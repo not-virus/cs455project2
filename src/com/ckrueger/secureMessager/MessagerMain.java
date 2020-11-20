@@ -165,10 +165,12 @@ public class MessagerMain {
                         
                         String[] messageArr = messageFromClient.split("\n");
                         for (int line = 0; line < messageArr.length; line++) {
-                            System.out.println("  " + messageArr[line]);
+                            if (!messageArr[line].strip().contentEquals("")) {
+                                System.out.print("  " + messageArr[line]);
+                            }
                         }
                         
-                        System.out.println("End of message from client.");
+                        System.out.println("\nEnd of message from client.");
                         System.out.println("----------------------------------------\n");
                         
                         
@@ -330,7 +332,7 @@ public class MessagerMain {
                             String message = clientClip.message();
 
                             client.write(message.getBytes(StandardCharsets.UTF_8));
-                            System.out.println("Your message has been sent to the client.");
+                            System.out.println("Your message has been sent to the server.");
                             System.out.println("----------------------------------------\n");
                             
                             // This is the worst possible way to do this
@@ -338,7 +340,7 @@ public class MessagerMain {
                             clientCT.start();
                         } else if (clientCT.getCommand().command == CLToken.Commands.DISCONNECT) {
                             clientCT.close();
-                            System.out.println("You have chosen to disconnect from the client.");
+                            System.out.println("You have chosen to disconnect from the server.");
                             System.out.println("Are you sure? (y/n)");
                             disconnect = clientClip.yesNo();   
                             
@@ -425,26 +427,3 @@ public class MessagerMain {
 		//input.close();        
 	}
 }
-
-/*
-// FOR TESTING ONLY
-RSAPublicKeyManager rpkm = new RSAPublicKeyManager(keyMgr.getPublicKey());
-
-// Write keyfile
-String fileName = "test";
-Path filePath = Paths.get("C:\\Workspaces\\JavaProjects\\secureMessager\\keyfiles\\" + fileName);
-System.out.println("Attempting to write public key to file...");
-System.out.println("Public key:");
-System.out.println(rpkm.getKey());
-System.out.println("Output file path:");
-System.out.println(filePath + ".pub");
-rpkm.writeKey(filePath);
-
-// Read keyFile
-System.out.println("Attempting to load public key from file...");
-System.out.println("Input file path:");
-System.out.println(filePath + ".pub");
-rpkm.loadKey(filePath);
-System.out.println("Public key:");
-System.out.println(rpkm.getKey());
-*/
