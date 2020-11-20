@@ -4,7 +4,8 @@ import java.io.*;
 import java.net.*;
 
 public class Server {
-    
+
+    final int READ_BUFFER_SIZE = 2048;
     private ServerSocket serverSocket = null;
     private Socket socket = null;
     private InputStream dataInput = null;
@@ -86,6 +87,7 @@ public class Server {
     public void write(byte[] data) throws IOException {
         // Write bytes to client
         dataOutput.write(data);
+        dataOutput.write(-1);
         dataOutput.flush();
     }
     
@@ -96,8 +98,7 @@ public class Server {
      */
     public byte[] readBytes(int len) throws IOException {
         // This will remain null unless data is available to read
-        final int BUFFER_SIZE = Integer.MAX_VALUE;
-        byte[] receivedData = new byte[BUFFER_SIZE];
+        byte[] receivedData = new byte[READ_BUFFER_SIZE];
         
         /*if (dataInput.available() != 0)
         {
@@ -109,10 +110,9 @@ public class Server {
         //receivedData = dataInput.readNBytes(len);
         
         // Read len bytes from input stream OR up to BUFFER_SIZE
-        
         int readCount = 0;
         int currentByte = 0;
-        while (readCount < BUFFER_SIZE && readCount < len && (currentByte = dataInput.read()) != -1) {
+        while (readCount < READ_BUFFER_SIZE && readCount < len && (currentByte = dataInput.read()) != -1) {
             receivedData[readCount] = (byte) currentByte;
             readCount++;
         }
@@ -126,26 +126,15 @@ public class Server {
      */
     public byte[] readAllBytes() throws IOException {
         // This will remain null unless data is available to read
-        //final int BUFFER_SIZE = Integer.MAX_VALUE;
-        //byte[] receivedData = new byte[BUFFER_SIZE];
+        byte[] receivedData = new byte[READ_BUFFER_SIZE];
         
-        /*System.out.println(dataInput.available());
-        
-        if (dataInput.available() != 0)
-        {
-            // Read available bytes
-            receivedData = dataInput.readAllBytes();
-        }*/
-        
-        // Read available bytes
-        byte[] receivedData = dataInput.readAllBytes();
-                
-        /*int readCount = 0;
+        // Read available bytes                
+        int readCount = 0;
         int currentByte = 0;
-        while (readCount < BUFFER_SIZE && (currentByte = dataInput.read()) != -1) {
+        while (readCount < READ_BUFFER_SIZE && (currentByte = dataInput.read()) != -1) {
             receivedData[readCount] = (byte) currentByte;
             readCount++;
-        }*/
+        }
         
         return receivedData;
     }

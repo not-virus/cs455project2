@@ -5,6 +5,7 @@ import java.io.*;
 
 public class Client {
     
+    final int READ_BUFFER_SIZE = 2048;
     private Socket socket = null;
     private String address = null;
     private int port = 0;
@@ -77,6 +78,7 @@ public class Client {
     public void write(byte[] data) throws IOException {
         // Write bytes to client
         dataOutput.write(data);
+        dataOutput.write(-1);
         dataOutput.flush();
     }
     
@@ -87,12 +89,21 @@ public class Client {
      */
     public byte[] readBytes(int len) throws IOException {
         // This will remain null unless data is available to read
-        byte[] receivedData = null;
+        byte[] receivedData = new byte[READ_BUFFER_SIZE];
         
-        if (dataInput.available() != 0)
+        /*if (dataInput.available() != 0)
         {
             // Read available bytes
             receivedData = dataInput.readNBytes(len);
+        }*/
+        
+        
+        // Read len bytes from input stream OR up to BUFFER_SIZE
+        int readCount = 0;
+        int currentByte = 0;
+        while (readCount < READ_BUFFER_SIZE && readCount < len && (currentByte = dataInput.read()) != -1) {
+            receivedData[readCount] = (byte) currentByte;
+            readCount++;
         }
         
         return receivedData;
@@ -104,12 +115,23 @@ public class Client {
      */
     public byte[] readAllBytes() throws IOException {
         // This will remain null unless data is available to read
-        byte[] receivedData = null;
+        /*byte[] receivedData = null;
         
         if (dataInput.available() != 0)
         {
             // Read available bytes
             receivedData = dataInput.readAllBytes();
+        }*/
+        
+        // This will remain null unless data is available to read
+        byte[] receivedData = new byte[READ_BUFFER_SIZE];
+        
+        // Read available bytes                
+        int readCount = 0;
+        int currentByte = 0;
+        while (readCount < READ_BUFFER_SIZE && (currentByte = dataInput.read()) != -1) {
+            receivedData[readCount] = (byte) currentByte;
+            readCount++;
         }
         
         return receivedData;

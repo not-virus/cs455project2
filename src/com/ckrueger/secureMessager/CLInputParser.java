@@ -209,8 +209,10 @@ public class CLInputParser {
         while (!token.isCommand 
                || token.command == CLToken.Commands.NONE
                || token.command == CLToken.Commands.INVALID) {
-            System.out.println(in + ": Not a valid command. (All commands " +
-                "start with !)");
+            if (token.value != "") {
+                System.out.println(in + ": Not a valid command. (All " +
+                        "commands start with !)");
+            }
             in = clIn();
             token = parse(in);
         }
