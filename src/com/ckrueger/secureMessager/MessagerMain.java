@@ -224,7 +224,7 @@ public class MessagerMain {
                     rpkm = loadRemotePublic();
                     
                     // Authenticate using a PublicKey as a randomly generated string of bytes
-                    byte[] authData = new RSAKeyPairManager(2048).getPublicKey().getEncoded();
+                    byte[] authData = new RSAKeyPairManager(192).getPublicKey().getEncoded();
                     
                     // Encrypt with remote host's public key
                     byte[] authDataEnc = null;
@@ -234,12 +234,6 @@ public class MessagerMain {
                         System.out.println("ERROR: Public key not valid for encryption");
                         e.printStackTrace();
                     }
-                    
-                    // Send our public key
-                    byte[] pkMessage = new byte[PK_MESSAGE_PREFIX.length + authDataEnc.length];
-                    System.arraycopy(PK_MESSAGE_PREFIX, 0, pkMessage, 0, PK_MESSAGE_PREFIX.length);
-                    System.arraycopy(authDataEnc, 0, pkMessage, PK_MESSAGE_PREFIX.length, authDataEnc.length);
-                    server.write(pkMessage);
                     
                     byte[] authResponseEnc = server.readAllBytes();
                     byte[] authResponse = rsa.decrypt(authResponseEnc, rsakpm.getPrivateKey());
@@ -391,42 +385,22 @@ public class MessagerMain {
                     
                     // Get server's public key
                     RSAPublicKeyManager serverRpkm = null;
+                    serverRpkm = loadRemotePublic();
                     
-                    byte[] serverPKMessage = client.readAllBytes();
+                    // Now that we have the server's private key, get the server's
+                    //  authentication message, decrypt, re-encrypt and send
+                    byte[] authMessageEnc = client.readAllBytes();
+                    byte[] authMessage = rsa.decrypt(authMessageEnc, rsakpm.getPrivateKey());
+                    byte[] returnAuthEnc = rsa.encrypt(authMessage, serverRpkm.getKey());
+                    client.write(returnAuthEnc);
                     
-                    // Verify it's the public key message
-                    boolean pkMessageValid = true;
-                    for (int i = 0; i < PK_MESSAGE_PREFIX.length; i++) {
-                        if (!(serverPKMessage[i] == PK_MESSAGE_PREFIX[i])) {
-                            pkMessageValid = false;
-                        }
-                    }
+                    System.out.println("Returned authentication message. Awaiting response from server...");
                     
-                    // If message format not recognized, notify and skip authentication, else continue
-                    if (!pkMessageValid) {
-                        System.out.println("ERROR: Invalid public key transmission from server.");
-                        System.out.println(new String(serverPKMessage, StandardCharsets.UTF_8));
-                        System.out.println("NOTICE: Skipping server authentication.");
+                    if (client.readAllBytes() == "Secured".getBytes())
+                    {
+                        System.out.println("Auccessfully authenticated server.");
                     } else {
-                        byte[] serverPrivateKeyEncoded = new byte[serverPKMessage.length - PK_MESSAGE_PREFIX.length];
-                        System.arraycopy(serverPKMessage, PK_MESSAGE_PREFIX.length, serverPrivateKeyEncoded, 0, serverPKMessage.length - PK_MESSAGE_PREFIX.length);
-                        serverRpkm.loadKey(serverPrivateKeyEncoded);
-                        
-                        // Now that we have the server's private key, get the server's
-                        //  authentication message, decrypt, re-encrypt and send
-                        byte[] authMessageEnc = client.readAllBytes();
-                        byte[] authMessage = rsa.decrypt(authMessageEnc, rsakpm.getPrivateKey());
-                        byte[] returnAuthEnc = rsa.encrypt(authMessage, serverRpkm.getKey());
-                        client.write(returnAuthEnc);
-                        
-                        System.out.println("Returned authentication message. Awaiting response from server...");
-                        
-                        if (client.readAllBytes() == "Secured".getBytes())
-                        {
-                            System.out.println("Auccessfully authenticated server.");
-                        } else {
-                            System.out.println("ERROR: Failed to authenticate server");
-                        }
+                        System.out.println("ERROR: Failed to authenticate server");
                     }
                     
                     System.out.println("\n----------------------------------------");
@@ -717,7 +691,7 @@ public class MessagerMain {
         
         // If user did not provide a path, use default path
         if (keyFilePath == "") {
-            keyFilePath = DEFAULT_KEY_FILE_PATH;
+            keyFilePath = DEFAULT_REMOTE_KEY_FILE_PATH;
             if (!new File(keyFilePath).isDirectory()) {
                 boolean created = new File(keyFilePath).mkdirs();
                 if (!created) {
@@ -764,6 +738,12 @@ public class MessagerMain {
         }        
     }
 	
+	/**
+	 * Saves both keys stored in a RSAKeyPairManager object
+	 * @param rkpm a RSAKeyPairManager object
+	 * @return true if keys were successfully saved, else false
+	 * @throws IOException in the event of File IO errors
+	 */
 	public static boolean saveKeys(RSAKeyPairManager rkpm) throws IOException {
 	    // Return value
 	    boolean success = false;
@@ -869,3 +849,31 @@ public class MessagerMain {
         return success;
 	}
 }
+
+/*// Send our public key
+byte[] pkMessage = new byte[PK_MESSAGE_PREFIX.length + authDataEnc.length];
+System.arraycopy(PK_MESSAGE_PREFIX, 0, pkMessage, 0, PK_MESSAGE_PREFIX.length);
+System.arraycopy(authDataEnc, 0, pkMessage, PK_MESSAGE_PREFIX.length, authDataEnc.length);
+server.write(pkMessage);*/
+
+
+
+/*byte[] serverPKMessage = client.readAllBytes();
+
+// Verify it's the public key message
+boolean pkMessageValid = true;
+for (int i = 0; i < PK_MESSAGE_PREFIX.length; i++) {
+    if (!(serverPKMessage[i] == PK_MESSAGE_PREFIX[i])) {
+        pkMessageValid = false;
+    }
+}
+
+// If message format not recognized, notify and skip authentication, else continue
+if (!pkMessageValid) {
+    System.out.println("ERROR: Invalid public key transmission from server.");
+    System.out.println(new String(serverPKMessage, StandardCharsets.UTF_8));
+    System.out.println("NOTICE: Skipping server authentication.");
+} else {
+    byte[] serverPrivateKeyEncoded = new byte[serverPKMessage.length - PK_MESSAGE_PREFIX.length];
+    System.arraycopy(serverPKMessage, PK_MESSAGE_PREFIX.length, serverPrivateKeyEncoded, 0, serverPKMessage.length - PK_MESSAGE_PREFIX.length);
+    serverRpkm.loadKey(serverPrivateKeyEncoded);*/
