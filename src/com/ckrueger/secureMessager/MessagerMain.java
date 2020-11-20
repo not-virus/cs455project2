@@ -66,7 +66,7 @@ public class MessagerMain {
             // Command Interpreter
             CLInputParser clip = new CLInputParser(System.in);
             // Create thread to wait for c keypress    
-            CommandDetector commandThread = new CommandDetector(clip);
+            CommandDetector commandThread = new CommandDetector();
             
             // Start command listener thread
             commandThread.setName("command detector");
@@ -102,7 +102,7 @@ public class MessagerMain {
                     } else {
                         System.out.println("You have chosen to reject the connection.");
                         // Start waiting for user input again
-                        commandThread = new CommandDetector(clip);
+                        commandThread = new CommandDetector();
                     }
                 } else if (commandThread.getCommand().command == CLToken.Commands.CONNECT) {
 //                    || !commandThread.isAlive()) {
@@ -131,7 +131,7 @@ public class MessagerMain {
             if (next == Action.ACCEPT_CONNECTION) {
                 // CLInputParser for server connection
                 CLInputParser serverClip = new CLInputParser(System.in);
-                CommandDetector serverCT = new CommandDetector(serverClip);
+                CommandDetector serverCT = new CommandDetector();
                 
                 System.out.println("Connected to client.");                
                 System.out.println("Awaiting message from client...");
@@ -162,15 +162,17 @@ public class MessagerMain {
                             disconnect = true;
                         }
                         
-                        System.out.print("> ");
-                        System.out.println(messageFromClient);
+                        String[] messageArr = messageFromClient.split("\n");
+                        for (int line = 0; line < messageArr.length; line++) {
+                            System.out.println("  " + messageArr[line]);
+                        }
                         
                         System.out.println("End of message from client.");
                         System.out.println("----------------------------------------\n");
                         
                         
                         // This is the worst possible way to do this
-                        serverCT = new CommandDetector(serverClip);
+                        serverCT = new CommandDetector();
                         serverCT.start();                                                
                     } else if (serverCT.getCommand().command == CLToken.Commands.MESSAGE) {
                         serverCT.close();
@@ -184,13 +186,19 @@ public class MessagerMain {
                         System.out.println("----------------------------------------\n");
                         
                         // This is the worst possible way to do this
-                        serverCT = new CommandDetector(serverClip);
+                        serverCT = new CommandDetector();
                         serverCT.start();
                     } else if (serverCT.getCommand().command == CLToken.Commands.DISCONNECT) {
                         serverCT.close();
                         System.out.println("You have chosen to disconnect from the client.");
                         System.out.println("Are you sure? (y/n)");
-                        disconnect = serverClip.yesNo();                         
+                        disconnect = serverClip.yesNo();      
+                        
+                        if (!disconnect) {
+                            // This is the worst possible way to do this
+                            serverCT = new CommandDetector();
+                            serverCT.start(); 
+                        }
                     }                      
                 }
                 
@@ -257,7 +265,7 @@ public class MessagerMain {
                     System.out.println("Connected to " + serverAddress + ":" + serverPort + ".");
                     System.out.println("\n----------------------------------------");
                     
-                    CommandDetector clientCT = new CommandDetector(clientClip);
+                    CommandDetector clientCT = new CommandDetector();
                     
                     System.out.println("Awaiting message from server...");
                     System.out.println("Type \"!message\" to send a message to " +
@@ -273,7 +281,9 @@ public class MessagerMain {
                         //serverCT.getCommand().command == CLToken.Commands.NONE
 
                         if (client.available() > 0) {
-                            clientCT.close();
+                            if (clientCT != null) {
+                                clientCT.close();
+                            }
                             
                             System.out.println("\n----------------------------------------");
                             System.out.println("\nNew message from server:");
@@ -287,15 +297,17 @@ public class MessagerMain {
                                 disconnect = true;
                             }
                             
-                            System.out.print("> ");
-                            System.out.println(messageFromServer);
+                            String[] messageArr = messageFromServer.split("\n");
+                            for (int line = 0; line < messageArr.length; line++) {
+                                System.out.println("  " + messageArr[line]);
+                            }
                             
                             System.out.println("End of message from server.");
                             System.out.println("----------------------------------------\n");
                             
                             
                             // This is the worst possible way to do this
-                            clientCT = new CommandDetector(clientClip);
+                            clientCT = new CommandDetector();
                             clientCT.start();                                                
                         } else if (clientCT.getCommand().command == CLToken.Commands.MESSAGE) {
                             clientCT.close();
@@ -309,14 +321,20 @@ public class MessagerMain {
                             System.out.println("----------------------------------------\n");
                             
                             // This is the worst possible way to do this
-                            clientCT = new CommandDetector(clientClip);
+                            clientCT = new CommandDetector();
                             clientCT.start();
                         } else if (clientCT.getCommand().command == CLToken.Commands.DISCONNECT) {
                             clientCT.close();
                             System.out.println("You have chosen to disconnect from the client.");
                             System.out.println("Are you sure? (y/n)");
-                            disconnect = clientClip.yesNo();                         
-                        }                      
+                            disconnect = clientClip.yesNo();   
+                            
+                            if (!disconnect) {
+                                // This is the worst possible way to do this
+                                clientCT = new CommandDetector();
+                                clientCT.start(); 
+                            }
+                        }
                     }
                     
                     System.out.println("Disconnected from server.");

@@ -17,7 +17,7 @@ public class CommandDetector extends Thread {
     private CLInputParser clip;
     
     
-    public CommandDetector(CLInputParser clip)
+    public CommandDetector()
     {
         this.commandReceived = false;
         this.clip = new CLInputParser(System.in); // Yes, I know this is unsafe
