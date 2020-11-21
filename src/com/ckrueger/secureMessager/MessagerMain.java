@@ -222,7 +222,7 @@ public class MessagerMain {
                 RSAPublicKeyManager rpkm = null;
                 
                 if (authClient) {
-                    server.write("AUTH".getBytes());
+                    server.write("RQ_AUTH".getBytes(StandardCharsets.UTF_8));
                     
                     rpkm = loadRemotePublic();
                     
@@ -254,6 +254,8 @@ public class MessagerMain {
                     } else {
                         System.out.println("Server's identity has been validated.");
                     }                    
+                } else {
+                    server.write("NO_AUTH".getBytes(StandardCharsets.UTF_8));
                 }
                 
                 
@@ -398,7 +400,11 @@ public class MessagerMain {
                     serverRpkm = loadRemotePublic();
                     
                     // Authenticate server
-                    if (new String(client.readAllBytes(), StandardCharsets.UTF_8).contentEquals("AUTH")) {
+                    String servMsg = new String(client.readBytes(8), StandardCharsets.UTF_8);
+                    System.out.println(servMsg);
+                    System.out.println(servMsg.contentEquals("RQ_AUTH"));
+                    
+                    if (servMsg.contains("RQ_AUTH")) {
                         System.out.println("Server has requested authentication.");
 
                         // Now that we have the server's public key, get the server's
