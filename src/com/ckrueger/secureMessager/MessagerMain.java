@@ -243,6 +243,8 @@ public class MessagerMain {
                     // Send encrypted auth server
                     server.write(authDataEnc);
                     
+                    System.out.println("Sent auth message.");
+                    
                     // Get respoonse from server, decrypt and verify
                     byte[] authResponseEnc = server.readAllBytes();
                     byte[] authResponse = rsa.decrypt(authResponseEnc, rsakpm.getPrivateKey());
@@ -250,7 +252,7 @@ public class MessagerMain {
                     if (!(authResponse == authData)) {
                         System.out.println("ERROR: Failed to authenticate server.");
                     } else {
-                        System.out.println("Successfully authenticated server.");
+                        System.out.println("Server's identity has been validated.");
                     }                    
                 }
                 
@@ -395,7 +397,8 @@ public class MessagerMain {
                     RSAPublicKeyManager serverRpkm = null;
                     serverRpkm = loadRemotePublic();
                     
-                    if (client.readAllBytes() == "AUTH".getBytes()) {
+                    // Authenticate server
+                    if (new String(client.readAllBytes(), StandardCharsets.UTF_8).contentEquals("AUTH")) {
                         System.out.println("Server has requested authentication.");
 
                         // Now that we have the server's public key, get the server's
@@ -413,6 +416,8 @@ public class MessagerMain {
                         } else {
                             System.out.println("ERROR: Failed to authenticate server");
                         }
+                    } else {
+                        System.out.println("DEBUG: Server did not request authentication");
                     }
                     
                     System.out.println("\n----------------------------------------");
