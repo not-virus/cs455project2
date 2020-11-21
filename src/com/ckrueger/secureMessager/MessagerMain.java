@@ -14,9 +14,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
-
 import javax.crypto.*;
 import java.lang.Runtime;
+import java.util.Base64;
 
 public class MessagerMain {
     
@@ -271,6 +271,7 @@ public class MessagerMain {
                     // Send encrypted auth server
                     server.write(authDataEnc);
                     System.out.println("Sent auth message.");
+                    System.out.println(Base64.getEncoder().encodeToString(authDataEnc));
                     
                     // Get respoonse from server, decrypt and verify
                     byte[] authResponseEnc = server.readAllBytes();
@@ -440,7 +441,7 @@ public class MessagerMain {
                         //  authentication message, decrypt, re-encrypt and send
                         byte[] authDataEnc = client.readAllBytes();
                         System.out.println(authDataEnc.length);
-                        System.out.println(new String(authDataEnc, StandardCharsets.UTF_8));
+                        System.out.println(Base64.getEncoder().encodeToString(authDataEnc));
                         byte[] authDataDec = rsa.decrypt(authDataEnc, localKeyMgr.getPrivateKey());
                         byte[] returnAuthDataEnc = rsa.encrypt(authDataDec, serverRpkm.getKey());
                         client.write(returnAuthDataEnc);
