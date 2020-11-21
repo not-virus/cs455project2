@@ -240,12 +240,11 @@ public class MessagerMain {
                     } catch (InvalidKeyException e) {
                         System.out.println("ERROR: Public key not valid for encryption");
                         e.printStackTrace();
-                    }
-                    
-                    System.out.println(authDataEnc.length);                    
+                    }                  
                     
                     // Send encrypted auth server
                     server.write(authDataEnc);
+                    System.out.println(new String(authDataEnc, StandardCharsets.UTF_8));
                     
                     System.out.println("Sent auth message.");
                     
@@ -417,6 +416,7 @@ public class MessagerMain {
                         //  authentication message, decrypt, re-encrypt and send
                         byte[] authMessageEnc = client.readAllBytes();
                         System.out.println(authMessageEnc.length);
+                        System.out.println(new String(authMessageEnc, StandardCharsets.UTF_8));
                         byte[] authMessage = rsa.decrypt(authMessageEnc, rsakpm.getPrivateKey());
                         byte[] returnAuthEnc = rsa.encrypt(authMessage, serverRpkm.getKey());
                         client.write(returnAuthEnc);
