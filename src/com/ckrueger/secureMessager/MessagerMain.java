@@ -5,6 +5,7 @@ import com.ckrueger.secureMessager.crypto.*;
 import com.ckrueger.secureMessager.comms.*;
 import java.lang.System;
 import java.util.Arrays;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.Executors;
 import java.net.*;
@@ -221,20 +222,28 @@ public class MessagerMain {
                 RSAPublicKeyManager rpkm = null;
                 
                 if (authClient) {
+                    server.write("AUTH".getBytes());
+                    
                     rpkm = loadRemotePublic();
                     
                     // Authenticate using a PublicKey as a randomly generated string of bytes
-                    byte[] authData = new RSAKeyPairManager(192).getPublicKey().getEncoded();
+                    byte[] authData = new byte[64];
+                    new Random().nextBytes(authData);
                     
                     // Encrypt with remote host's public key
                     byte[] authDataEnc = null;
                     try {
-                        authDataEnc = rsa.encrypt(authData, keyMgr.getPublicKey());
+                        authDataEnc = rsa.encrypt(authData, rpkm.getKey());
+                        System.out.println("Encrypted authentication string.");
                     } catch (InvalidKeyException e) {
                         System.out.println("ERROR: Public key not valid for encryption");
                         e.printStackTrace();
                     }
                     
+                    // Send encrypted auth server
+                    server.write(authDataEnc);
+                    
+                    // Get respoonse from server, decrypt and verify
                     byte[] authResponseEnc = server.readAllBytes();
                     byte[] authResponse = rsa.decrypt(authResponseEnc, rsakpm.getPrivateKey());
                     
@@ -382,25 +391,28 @@ public class MessagerMain {
                 {
                     System.out.println("Connected to " + serverAddress + ":" + serverPort + ".");
                     
-                    
                     // Get server's public key
                     RSAPublicKeyManager serverRpkm = null;
                     serverRpkm = loadRemotePublic();
                     
-                    // Now that we have the server's private key, get the server's
-                    //  authentication message, decrypt, re-encrypt and send
-                    byte[] authMessageEnc = client.readAllBytes();
-                    byte[] authMessage = rsa.decrypt(authMessageEnc, rsakpm.getPrivateKey());
-                    byte[] returnAuthEnc = rsa.encrypt(authMessage, serverRpkm.getKey());
-                    client.write(returnAuthEnc);
-                    
-                    System.out.println("Returned authentication message. Awaiting response from server...");
-                    
-                    if (client.readAllBytes() == "Secured".getBytes())
-                    {
-                        System.out.println("Auccessfully authenticated server.");
-                    } else {
-                        System.out.println("ERROR: Failed to authenticate server");
+                    if (client.readAllBytes() == "AUTH".getBytes()) {
+                        System.out.println("Server has requested authentication.");
+
+                        // Now that we have the server's public key, get the server's
+                        //  authentication message, decrypt, re-encrypt and send
+                        byte[] authMessageEnc = client.readAllBytes();
+                        byte[] authMessage = rsa.decrypt(authMessageEnc, rsakpm.getPrivateKey());
+                        byte[] returnAuthEnc = rsa.encrypt(authMessage, serverRpkm.getKey());
+                        client.write(returnAuthEnc);
+                        
+                        System.out.println("Returned authentication message. Awaiting response from server...");
+                        
+                        if (client.readAllBytes() == "SECURED".getBytes())
+                        {
+                            System.out.println("Successfully authenticated server.");
+                        } else {
+                            System.out.println("ERROR: Failed to authenticate server");
+                        }
                     }
                     
                     System.out.println("\n----------------------------------------");
