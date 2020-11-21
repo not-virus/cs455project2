@@ -16,7 +16,7 @@ public class RSACipher {
         byte[] cipherText = {};
         
         try {
-            Cipher encryptCipher = Cipher.getInstance("RSA");
+            Cipher encryptCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
             encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
             cipherText = encryptCipher.doFinal(plainText);
         } catch (NoSuchAlgorithmException e) {
@@ -42,7 +42,7 @@ public class RSACipher {
         byte[] plainText = {};
         
         try {
-            Cipher decryptCipher = Cipher.getInstance("RSA");
+            Cipher decryptCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
             decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
             plainText = decryptCipher.doFinal(cipherText);
         } catch (NoSuchAlgorithmException e) {

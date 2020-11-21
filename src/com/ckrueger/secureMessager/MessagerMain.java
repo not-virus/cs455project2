@@ -61,29 +61,29 @@ public class MessagerMain {
 	    CLInputParser mainClip = new CLInputParser(System.in);
 	    
 	    // Load RSA keys from file
-	    RSAKeyPairManager rsakpm = loadKeys();
+	    RSAKeyPairManager localKeyMgr = loadKeys();
 	    
 	    // Handle load failure
 	    boolean loadRetry = true;
-	    while (rsakpm == null && loadRetry == true) {
+	    while (localKeyMgr == null && loadRetry == true) {
 	        System.out.println("Failed to load one or both keys from files.");
 	        System.out.println("You can try to load the keys again or generate new keys.");
 	        System.out.println("Would you like to try again? (y/n)");
 	        loadRetry = mainClip.yesNo();
 	        
 	        if (loadRetry) {
-	            rsakpm = loadKeys();
+	            localKeyMgr = loadKeys();
 	        }
 	    }
 	    
 	    // If keys were not loaded and user chooses not to try again, generate new keys
-	    if (rsakpm == null) {
+	    if (localKeyMgr == null) {
 	        System.out.println("You have chosen to generate new keys.");
 	        System.out.println("Generating new keys...");
-	        rsakpm = new RSAKeyPairManager(2048);
+	        localKeyMgr = new RSAKeyPairManager(2048);
 	        
 	        // If still unable to generate keys, terminate. Something is wrong!
-	        if (!rsakpm.privateKeySet() || !rsakpm.publicKeySet()) {
+	        if (!localKeyMgr.privateKeySet() || !localKeyMgr.publicKeySet()) {
 	            System.out.println("FATAL ERROR: Failed to generate new key " +
 	                    "pair of size " + 2048 + "bits.");
 	            System.out.println("Terminating...");
@@ -95,7 +95,7 @@ public class MessagerMain {
 	        boolean save = mainClip.yesNo();
 	        
 	        if (save) {
-	            boolean saveSuccess = saveKeys(rsakpm);
+	            boolean saveSuccess = saveKeys(localKeyMgr);
 	            
 	            // Retry until success or skip
 	            boolean saveRetry = true;
@@ -104,7 +104,7 @@ public class MessagerMain {
 	                saveRetry = mainClip.yesNo();
 	                
 	                if (saveRetry) {
-	                    saveSuccess = saveKeys(rsakpm);   
+	                    saveSuccess = saveKeys(localKeyMgr);   
 	                } else {
 	                    System.out.println("Skipping. Keys will not be saved.");
 	                }
@@ -112,10 +112,7 @@ public class MessagerMain {
 	        }
 	    }
 	    
-	    // Key pair generation and management
-        RSAKeyPairManager keyMgr = new RSAKeyPairManager(2048);
-        
-	    System.out.println("Type !help for a list of commands.");
+        System.out.println("Type !help for a list of commands.");
 	    
 	    // Start server on port 3000
 	    ServerRunner serverThread = new ServerRunner(localPort);
@@ -229,10 +226,37 @@ public class MessagerMain {
                     rpkm = loadRemotePublic();
                     
                     // Authenticate using a PublicKey as a randomly generated string of bytes
-                    byte[] authData = new byte[64];
-                    new Random().nextBytes(authData);
+                    byte[] authData = "hello".getBytes(StandardCharsets.UTF_8);//new byte[64];
+                    //new Random().nextBytes(authData); 
+
+                    // Encrypt message
+                    byte[] authEnc = null;
+                    try {
+                        authEnc = rsa.encrypt(authData, localKeyMgr.getPublicKey());
+                    } catch (InvalidKeyException e) {
+                        System.out.println("WARNING Public key not valid for encryption");
+                        e.printStackTrace();
+                    }
                     
-                    System.out.println(authData.length);
+                    // Display encrypted message
+                    //System.out.println("Encrytped message: ");
+                    //String authEncStr = new String(authEnc, StandardCharsets.UTF_8);
+                    //System.out.println(authEncStr);
+                    
+                    
+                    // Decrypt message
+                    byte[] authDec = null;
+                    try {
+                        authDec = rsa.decrypt(authEnc, localKeyMgr.getPrivateKey());
+                    } catch (InvalidKeyException e) {
+                        System.out.println("WARNING Private key not valid for decryption");
+                        e.printStackTrace();
+                    }
+
+                    // Display decrypted message
+                    System.out.println("Decrypted message: ");
+                    String authDecStr = new String(authDec, StandardCharsets.UTF_8);
+                    System.out.println(authDecStr + "\n");
                     
                     // Encrypt with remote host's public key
                     byte[] authDataEnc = null;
@@ -242,19 +266,17 @@ public class MessagerMain {
                     } catch (InvalidKeyException e) {
                         System.out.println("ERROR: Public key not valid for encryption");
                         e.printStackTrace();
-                    }                  
+                    }
                     
                     // Send encrypted auth server
                     server.write(authDataEnc);
-                    System.out.println(new String(authDataEnc, StandardCharsets.UTF_8));
-                    
                     System.out.println("Sent auth message.");
                     
                     // Get respoonse from server, decrypt and verify
                     byte[] authResponseEnc = server.readAllBytes();
                     System.out.println("Received response");
                     System.out.println("Response len: " + authResponseEnc.length);
-                    byte[] authResponse = rsa.decrypt(authResponseEnc, rsakpm.getPrivateKey());
+                    byte[] authResponse = rsa.decrypt(authResponseEnc, localKeyMgr.getPrivateKey());
                     
                     if (!(authResponse == authData)) {
                         System.out.println("ERROR: Failed to authenticate client.");
@@ -416,12 +438,12 @@ public class MessagerMain {
 
                         // Now that we have the server's public key, get the server's
                         //  authentication message, decrypt, re-encrypt and send
-                        byte[] authMessageEnc = client.readAllBytes();
-                        System.out.println(authMessageEnc.length);
-                        System.out.println(new String(authMessageEnc, StandardCharsets.UTF_8));
-                        byte[] authMessage = rsa.decrypt(authMessageEnc, rsakpm.getPrivateKey());
-                        byte[] returnAuthEnc = rsa.encrypt(authMessage, serverRpkm.getKey());
-                        client.write(returnAuthEnc);
+                        byte[] authDataEnc = client.readAllBytes();
+                        System.out.println(authDataEnc.length);
+                        System.out.println(new String(authDataEnc, StandardCharsets.UTF_8));
+                        byte[] authDataDec = rsa.decrypt(authDataEnc, localKeyMgr.getPrivateKey());
+                        byte[] returnAuthDataEnc = rsa.encrypt(authDataDec, serverRpkm.getKey());
+                        client.write(returnAuthDataEnc);
                         
                         System.out.println("Returned authentication message. Awaiting response from server...");
                         
@@ -543,10 +565,10 @@ public class MessagerMain {
                 // If user confirms, generate new keys
                 if (proceed) {
                     System.out.println("Generating new keys...");
-                    rsakpm = new RSAKeyPairManager(2048);
+                    localKeyMgr = new RSAKeyPairManager(2048);
                     
                     // If still unable to generate keys, terminate. Something is wrong!
-                    if (!rsakpm.privateKeySet() || !rsakpm.publicKeySet()) {
+                    if (!localKeyMgr.privateKeySet() || !localKeyMgr.publicKeySet()) {
                         System.out.println("FATAL ERROR: Failed to generate new key " +
                                 "pair of size " + 2048 + "bits.");
                         System.out.println("Terminating...");
@@ -558,7 +580,7 @@ public class MessagerMain {
                     boolean save = mainClip.yesNo();
                     
                     if (save) {
-                        boolean saveSuccess = saveKeys(rsakpm);
+                        boolean saveSuccess = saveKeys(localKeyMgr);
                         
                         // Retry until success or skip
                         boolean saveRetry = true;
@@ -567,7 +589,7 @@ public class MessagerMain {
                             saveRetry = mainClip.yesNo();
                             
                             if (saveRetry) {
-                                saveSuccess = saveKeys(rsakpm);   
+                                saveSuccess = saveKeys(localKeyMgr);   
                             } else {
                                 System.out.println("Skipping. Keys will not be saved.");
                             }
