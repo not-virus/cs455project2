@@ -48,6 +48,8 @@ public class MessagerMain {
         //+ File.separator;
     private final static String DEFAULT_REMOTE_PUBLIC_KEY_FILE_NAME = "remote_key_rsa.pub";
     private final static byte[] PK_MESSAGE_PREFIX = {0x01, 'P', 'r', 'i', 'v', 'K', 'e', 'y', 0x02};
+    private final static int MAX_MESSAGE_LENGTH = 256;
+    
 
 	public static void main(String[] args) throws Exception {
 	    

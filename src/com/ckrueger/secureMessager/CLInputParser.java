@@ -13,7 +13,7 @@ public class CLInputParser {
     
     private static final int MAX_BUF_SIZE = 64;
     private Scanner input = null;
-    private final int MESSAGE_MAX_LINES = 2048;
+    private final int MESSAGE_MAX_LINES = 32;
     private boolean skipInput = false;
     
     /**

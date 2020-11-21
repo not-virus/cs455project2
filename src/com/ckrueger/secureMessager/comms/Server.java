@@ -5,7 +5,7 @@ import java.net.*;
 
 public class Server {
 
-    final int READ_BUFFER_SIZE = 2048;
+    final int READ_BUFFER_SIZE = 256;
     private ServerSocket serverSocket = null;
     private Socket socket = null;
     private InputStream dataInput = null;

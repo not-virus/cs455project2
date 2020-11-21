@@ -5,7 +5,7 @@ import java.io.*;
 
 public class Client {
     
-    final int READ_BUFFER_SIZE = 2048;
+    final int READ_BUFFER_SIZE = 256;
     private Socket socket = null;
     private String address = null;
     private int port = 0;
