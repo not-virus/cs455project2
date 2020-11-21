@@ -230,15 +230,19 @@ public class MessagerMain {
                     byte[] authData = new byte[64];
                     new Random().nextBytes(authData);
                     
+                    System.out.println(authData.length);
+                    
                     // Encrypt with remote host's public key
                     byte[] authDataEnc = null;
                     try {
                         authDataEnc = rsa.encrypt(authData, rpkm.getKey());
-                        System.out.println("Encrypted authentication string.");
+                        System.out.println("Encrypted authentication string. Length: " + authDataEnc.length);
                     } catch (InvalidKeyException e) {
                         System.out.println("ERROR: Public key not valid for encryption");
                         e.printStackTrace();
                     }
+                    
+                    System.out.println(authDataEnc.length);                    
                     
                     // Send encrypted auth server
                     server.write(authDataEnc);
@@ -247,12 +251,14 @@ public class MessagerMain {
                     
                     // Get respoonse from server, decrypt and verify
                     byte[] authResponseEnc = server.readAllBytes();
+                    System.out.println("Received response");
+                    System.out.println("Response len: " + authResponseEnc.length);
                     byte[] authResponse = rsa.decrypt(authResponseEnc, rsakpm.getPrivateKey());
                     
                     if (!(authResponse == authData)) {
-                        System.out.println("ERROR: Failed to authenticate server.");
+                        System.out.println("ERROR: Failed to authenticate client.");
                     } else {
-                        System.out.println("Server's identity has been validated.");
+                        System.out.println("Client's identity has been validated.");
                     }                    
                 } else {
                     server.write("NO_AUTH".getBytes(StandardCharsets.UTF_8));
@@ -402,7 +408,7 @@ public class MessagerMain {
                     // Authenticate server
                     String servMsg = new String(client.readBytes(8), StandardCharsets.UTF_8);
                     System.out.println(servMsg);
-                    System.out.println(servMsg.contentEquals("RQ_AUTH"));
+                    System.out.println(servMsg.contains("RQ_AUTH"));
                     
                     if (servMsg.contains("RQ_AUTH")) {
                         System.out.println("Server has requested authentication.");
@@ -410,6 +416,7 @@ public class MessagerMain {
                         // Now that we have the server's public key, get the server's
                         //  authentication message, decrypt, re-encrypt and send
                         byte[] authMessageEnc = client.readAllBytes();
+                        System.out.println(authMessageEnc.length);
                         byte[] authMessage = rsa.decrypt(authMessageEnc, rsakpm.getPrivateKey());
                         byte[] returnAuthEnc = rsa.encrypt(authMessage, serverRpkm.getKey());
                         client.write(returnAuthEnc);
@@ -624,9 +631,58 @@ public class MessagerMain {
 	
 	
 	public static RSAKeyPairManager loadKeys() throws IOException {
+        CLInputParser fileInput = new CLInputParser(System.in);
+        // RSA key pair manager
+        RSAKeyPairManager rkpm = new RSAKeyPairManager();
+        
+	    // If default keyfiles exist, try to use them
+	    if (new File(DEFAULT_KEY_FILE_PATH).isDirectory()
+	            && new File(DEFAULT_KEY_FILE_PATH + File.separator + DEFAULT_PRIVATE_KEY_FILE_NAME).exists()
+	            && new File(DEFAULT_KEY_FILE_PATH + File.separator + DEFAULT_PUBLIC_KEY_FILE_NAME).exists()) {
+	        System.out.println("Default key files found. Would you like to use them? (y/n)");
+	        boolean useExisting = fileInput.yesNo();
+	        
+	        if (useExisting) {
+	            String keyFilePath = DEFAULT_KEY_FILE_PATH;
+	            String privateKeyFilePath = keyFilePath + File.separator + DEFAULT_PRIVATE_KEY_FILE_NAME;
+	            String publicKeyFilePath = keyFilePath + File.separator + DEFAULT_PUBLIC_KEY_FILE_NAME;
+	            
+	            boolean error = false;
+	            // Try to load private key
+	            try {
+	                rkpm.loadPrivate(privateKeyFilePath);
+	            } catch (InvalidKeySpecException e) {
+	                System.out.println("ERROR: The private key file was not in the correct format.");
+	                error = true;
+	            } catch (IOException e) {
+	                error = true;
+	                //System.out.println("ERROR: I/O Error accessing private key file.");
+	            }
+	            
+	            // Try to load public key
+	            try {
+	                rkpm.loadPublic(publicKeyFilePath);
+	            } catch (InvalidKeySpecException e) {
+	                System.out.println("ERROR: The public key file was not in the correct format.");
+	                error = true;
+	            } catch (IOException e) {
+	                error = true;
+	                //System.out.println("ERROR: I/O Error accessing public key file.");
+	            }
+	            
+	            if (!error) {
+	                System.out.println("Default keys loaded successfully.");
+	                return rkpm;
+	            } else {
+	                rkpm = null;
+	                System.out.println("Failed to load default keys.");
+	            }
+	        }
+	    }
+	    
+	    
 	    // Get directory in which RSA key files are stored
         System.out.println("RSA key files location? (default: " + DEFAULT_KEY_FILE_PATH + ")");
-        CLInputParser fileInput = new CLInputParser(System.in);
         String keyFilePath = fileInput.dirPath();
         
         // If user did not provide a path, use default path
@@ -661,9 +717,6 @@ public class MessagerMain {
         if (publicKeyFilePath.contentEquals(keyFilePath)) {
             publicKeyFilePath += File.separator + DEFAULT_PUBLIC_KEY_FILE_NAME;
         }
-        
-        // RSA key pair manager
-        RSAKeyPairManager rkpm = new RSAKeyPairManager();
         
         // Try to load private key
         //System.out.println("Attempting to load private key from " + privateKeyFilePath + "...");

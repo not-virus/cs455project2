@@ -96,6 +96,12 @@ public class CLInputParser {
                 path = "";
                 valid = true;
             }
+
+            // Get next
+            if (!valid) {
+                in = clIn();
+                token = parse(in);
+            }
         }
         
         out = path;
@@ -136,6 +142,12 @@ public class CLInputParser {
             } else {
                 path = rootPath + "";
                 valid = true;
+            }
+            
+            // Get next
+            if (!valid) {
+                in = clIn();
+                token = parse(in);
             }
         }
         
