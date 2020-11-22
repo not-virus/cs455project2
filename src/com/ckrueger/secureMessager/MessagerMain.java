@@ -264,20 +264,21 @@ public class MessagerMain {
                     
                     authDataEnc = Base64.getEncoder().encode(authDataEnc);
                     
-                    // Send encrypted auth server
+                    // Send encrypted auth data to client
                     server.write(authDataEnc);
-                    System.out.println("Sent auth message.");
+                    System.out.println("Sent auth message to client.");
                     System.out.println(new String(authDataEnc, StandardCharsets.UTF_8));
                     
-                    // Get respoonse from server, decrypt and verify
+                    // Get response from client, decrypt and verify
                     byte[] authResponseEnc = server.readAllBytes();
-                    authResponseEnc = Base64.getDecoder().decode(authResponseEnc);
-                    System.out.println("Received response");
+                    System.out.println("Received response from client.");
                     System.out.println("Response len: " + authResponseEnc.length);
+                    System.out.println(new String(authResponseEnc, StandardCharsets.UTF_8));
+                    authResponseEnc = Base64.getDecoder().decode(authResponseEnc);
                     byte[] authResponse = rsa.decrypt(authResponseEnc, localKeyMgr.getPrivateKey());
                     System.out.println(new String(authResponse, StandardCharsets.UTF_8));
                     
-                    if (!(authResponse == authData)) {
+                    if (!(Arrays.equals(authResponse, authData))) {
                         System.out.println("ERROR: Failed to authenticate client.");
                     } else {
                         System.out.println("Client's identity has been validated.");
@@ -396,7 +397,7 @@ public class MessagerMain {
                     serverPort = clientClip.port();
                     
                     // Reject existing listening ServerSocket
-                    while (serverAddress == localAddress && serverPort == localPort) {
+                    while (serverAddress == localAddress) { //&& serverPort == localPort) {
                         System.out.println("Cannot connect to self! Please choose another host.");
                         System.out.println("Server address?");
                         serverAddress = clientClip.ipAddress();
@@ -440,15 +441,17 @@ public class MessagerMain {
                         byte[] authDataEnc = client.readAllBytes();
                         System.out.println(authDataEnc.length);
                         System.out.println(new String(authDataEnc, StandardCharsets.UTF_8));
+                        System.out.flush();
                         authDataEnc = Base64.getDecoder().decode(authDataEnc);
                         byte[] authDataDec = rsa.decrypt(authDataEnc, localKeyMgr.getPrivateKey());
+                        System.out.println("Decrypted message: ");
+                        System.out.println(new String(authDataDec, StandardCharsets.UTF_8));
                         byte[] returnAuthDataEnc = Base64.getEncoder().encode(rsa.encrypt(authDataDec, serverRpkm.getKey()));
                         client.write(returnAuthDataEnc);
-                        
+
                         System.out.println("Returned authentication message. Awaiting response from server...");
-                        
-                        if (client.readAllBytes() == "SECURED".getBytes())
-                        {
+
+                        if (client.readAllBytes() == "SECURED".getBytes()) {
                             System.out.println("Successfully authenticated server.");
                         } else {
                             System.out.println("ERROR: Failed to authenticate server");

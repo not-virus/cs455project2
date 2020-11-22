@@ -2,10 +2,11 @@ package com.ckrueger.secureMessager.comms;
 
 import java.io.*;
 import java.net.*;
+import java.util.Arrays;
 
 public class Server {
 
-    final int READ_BUFFER_SIZE = 256;
+    final int READ_BUFFER_SIZE = 2048;
     private ServerSocket serverSocket = null;
     private Socket socket = null;
     private InputStream dataInput = null;
@@ -109,6 +110,8 @@ public class Server {
             readCount++;
         }
         
+        byte[] tmp = Arrays.copyOf(receivedData, readCount);
+        
         return receivedData;
     }
     
@@ -128,6 +131,8 @@ public class Server {
             receivedData[readCount] = (byte) currentByte;
             readCount++;
         }
+        
+        byte[] tmp = Arrays.copyOf(receivedData, readCount);
         
         return receivedData;
     }

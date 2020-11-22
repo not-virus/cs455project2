@@ -1,11 +1,13 @@
 package com.ckrueger.secureMessager.comms;
 
 import java.net.*;
+import java.util.Arrays;
+
 import java.io.*;
 
 public class Client {
     
-    final int READ_BUFFER_SIZE = 256;
+    final int READ_BUFFER_SIZE = 2048;
     private Socket socket = null;
     private String address = null;
     private int port = 0;
@@ -103,7 +105,9 @@ public class Client {
             readCount++;
         }
         
-        return receivedData;
+        byte[] tmp = Arrays.copyOf(receivedData, readCount);
+        
+        return tmp;
     }
     
     /**
@@ -123,7 +127,9 @@ public class Client {
             readCount++;
         }
         
-        return receivedData;
+        byte[] tmp = Arrays.copyOf(receivedData, readCount);
+        
+        return tmp;
     }
     
     /**
