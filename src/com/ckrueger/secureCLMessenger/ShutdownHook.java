@@ -1,8 +1,8 @@
-package com.ckrueger.secureMessager;
+package com.ckrueger.secureCLMessenger;
 
 import java.io.IOException;
 
-import com.ckrueger.secureMessager.comms.Server;
+import com.ckrueger.secureCLMessenger.comms.Server;
 
 /**
  * This is a simple shutdown hook used to ensure the messaging server releases
@@ -15,15 +15,16 @@ import com.ckrueger.secureMessager.comms.Server;
 public class ShutdownHook extends Thread {
 
     private Server server = null;
-    
+
     /**
      * This must be provided a non-null Server object!
+     * 
      * @param server the Server object which should be closed
      */
     public ShutdownHook(Server server) {
         this.server = server;
     }
-    
+
     /**
      * Obligatory run method
      */
@@ -38,9 +39,9 @@ public class ShutdownHook extends Thread {
                 System.out.println("ERROR: Server null but also not null.");
             }
         } else {
-            System.out.println("Local server closed successfully.");
+            System.out.println("Local server closed.");
         }
-            
+
     }
 
 }

@@ -1,24 +1,55 @@
-package com.ckrueger.secureMessager;
+package com.ckrueger.secureCLMessenger;
 
-import com.ckrueger.secureMessager.*;
-import com.ckrueger.secureMessager.crypto.*;
-import com.ckrueger.secureMessager.comms.*;
+import com.ckrueger.secureCLMessenger.*;
+import com.ckrueger.secureCLMessenger.comms.*;
+import com.ckrueger.secureCLMessenger.crypto.*;
+
 import java.lang.System;
 import java.util.Arrays;
 import java.util.Random;
-import java.util.Scanner;
-import java.util.concurrent.Executors;
 import java.net.*;
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
-import javax.crypto.*;
 import java.lang.Runtime;
 import java.util.Base64;
 
-public class MessagerMain {
+/**
+ * @author Cameron Krueger
+ * 
+ * ### NOTE ###
+ *   THIS SOFTWARE CURRENTLY SENDS ALL MESSAGES AS PLAINTEXT (I.E. UNENCRYPTED)
+ *   BYTETREAMS. It is not actually secure!
+ *   
+ *   This software is not suitable for the purposes of conducting secure
+ *   peer-to-peer messaging!  This software does not yet support message
+ *   encryption, and even if it did, messages would be encrypted using the
+ *   RSA algoritm.  RSA is relatively weak and is typically reserved for
+ *   exchanging keys for a symmetric-key encryption algorithm such as AES, DES
+ *   or blowfish.
+ * 
+ * This is very much a work-in-progress.  It was created as the result of my
+ * misinterpretation of a school project's (arguably vague) requirements.  The
+ * project's requitements included establishing a client-server socket
+ * connection, authenticating that connection with RSA keys, conducting RSA
+ * encrypted communication, and finally timing the different steps of the
+ * process for analysis.  This software is on its way to being capable of all
+ * of that, but is evidently far, far more complicated than it needs to be.
+ * This is due to the fact that when I created it, I had absolutely no prior
+ * experience with socket programming, nor encryption.  Additionally,
+ * I wrote this entire program with somewhere between 50 and 70 hours of
+ * panicked work spread out over the course of only 6 days.  This code is an
+ * absolute mess and needs to be cleaned up.  Hopefully someday I can fix it
+ * up.
+ * 
+ * Oh, and it's worth noting that, due to the file IO performed herein, this
+ * software isn't really cross-platform.  It runs on Windows and Linux, but I
+ * don't know if files would be stored in the correct directories in Linux,
+ * should any changes be made to the system's functionality. 
+ */
+public class MessengerMain {
     
     private static enum Action {
         NONE,
@@ -56,7 +87,7 @@ public class MessagerMain {
 	    // RSACipher class for encryption and decryption 
 	    RSACipher rsa = new RSACipher();
 
-	    System.out.println("   --- Welcome to CKSM v1.0 ---   ");
+	    System.out.println("   --- Welcome to CLSM v1.0 ---   ");
 	    
 	    CLInputParser mainClip = new CLInputParser(System.in);
 	    
@@ -80,7 +111,11 @@ public class MessagerMain {
 	    if (localKeyMgr == null) {
 	        System.out.println("You have chosen to generate new keys.");
 	        System.out.println("Generating new keys...");
+	        long keyGenStart = System.currentTimeMillis();
 	        localKeyMgr = new RSAKeyPairManager(2048);
+	        long keyGenStop = System.currentTimeMillis();
+	        
+	        System.out.println("Key pair generation took " + (keyGenStart - keyGenStop) + " milliseconds.");
 	        
 	        // If still unable to generate keys, terminate. Something is wrong!
 	        if (!localKeyMgr.privateKeySet() || !localKeyMgr.publicKeySet()) {
@@ -177,7 +212,6 @@ public class MessagerMain {
                         commandThread.start();
                     }
                 } else if (commandThread.getCommand().command == CLToken.Commands.CONNECT) {
-//                    || !commandThread.isAlive()) {
                     next = Action.CONNECT_TO_HOST;
                     break;
                 }
@@ -213,30 +247,30 @@ public class MessagerMain {
             if (next == Action.ACCEPT_CONNECTION) {
                 // CLInputParser for server connection
                 CLInputParser serverClip = new CLInputParser(System.in);
-                CommandDetector serverCT = new CommandDetector();
                 
                 System.out.println("Would you like to authenticate the client? (y/n)");
                 boolean authClient = serverClip.yesNo();
                 
-                RSAPublicKeyManager rpkm = null;
+                RSAPublicKeyManager clientRpkm = null;
                 
                 if (authClient) {
                     server.write("RQ_AUTH".getBytes(StandardCharsets.UTF_8));
                     
-                    rpkm = loadRemotePublic();
+                    clientRpkm = loadRemotePublic();
                     
-                    // Authenticate using a PublicKey as a randomly generated string of bytes
-                    byte[] authData = "hello".getBytes(StandardCharsets.UTF_8);//new byte[64];
-                    //new Random().nextBytes(authData); 
+                    // Authenticate using a randomly generated string of bytes
+                    byte[] authData = new byte[64]; //"hello".getBytes(StandardCharsets.UTF_8);
+                    new Random().nextBytes(authData); 
 
+                    /* This is a test that uses the local public key and private key
                     // Encrypt message
                     byte[] authEnc = null;
-                    try {
+                    try {    
                         authEnc = rsa.encrypt(authData, localKeyMgr.getPublicKey());
                     } catch (InvalidKeyException e) {
                         System.out.println("WARNING Public key not valid for encryption");
                         e.printStackTrace();
-                    }                    
+                    }
                     
                     // Decrypt message
                     byte[] authDec = null;
@@ -250,49 +284,73 @@ public class MessagerMain {
                     // Display decrypted message
                     System.out.println("Decrypted message: ");
                     String authDecStr = new String(authDec, StandardCharsets.UTF_8);
-                    System.out.println(authDecStr + "\n");
+                    System.out.println(authDecStr + "\n"); */
                     
-                    // Encrypt with remote host's public key
+                    long authProcessStart = System.currentTimeMillis();                    
+                    
+                    // Encrypt with client's public key
                     byte[] authDataEnc = null;
+                    long authMessageEncryptStart = System.currentTimeMillis();
                     try {
-                        authDataEnc = rsa.encrypt(authData, rpkm.getKey());
-                        System.out.println("Encrypted authentication string.");
-                        System.out.println("Encrypted, decoded message len: " + authDataEnc.length);
+                        authDataEnc = rsa.encrypt(authData, clientRpkm.getKey());
+                        //System.out.println("Encrypted authentication string.");
+                        //System.out.println("Encrypted, decoded message len: " + authDataEnc.length);
                     } catch (InvalidKeyException e) {
                         System.out.println("ERROR: Public key not valid for encryption");
                         e.printStackTrace();
                     }
+                    long authMessageEncryptStop = System.currentTimeMillis();
                     
+                    //System.out.print("Encrypted auth string (converted to Base64):");
+                    //System.out.println(new String(Base64.getEncoder().encode(authData), StandardCharsets.UTF_8));
+                    System.out.println("in " + (authMessageEncryptStop - authMessageEncryptStart) + " milliseconds.");
+                    
+                    // Encode to base64
                     authDataEnc = Base64.getEncoder().encode(authDataEnc);
                     // Send encrypted auth data to client
                     server.write(authDataEnc);
-                    System.out.println("Sent auth message to client.");
-                    System.out.println("Encrypted, encoded message len: " + authDataEnc.length);
-                    System.out.println(new String(authDataEnc, StandardCharsets.UTF_8));
+                    System.out.println("Sent authentication message to client.");
+                    //System.out.println("Encrypted, encoded message len: " + authDataEnc.length);
+                    //System.out.println(new String(authDataEnc, StandardCharsets.UTF_8));
                     
                     // Get response from client, decrypt and verify
                     byte[] authResponseEnc = server.readAllBytes();
-                    System.out.println("Received response from client.");
-                    System.out.println("Encrypted, encoded response len: " + authResponseEnc.length);
-                    System.out.println(new String(authResponseEnc, StandardCharsets.UTF_8));
+                    //System.out.println("Received response from client.");
+                    //System.out.println("Encrypted, encoded response len: " + authResponseEnc.length);
+                    //System.out.println(new String(authResponseEnc, StandardCharsets.UTF_8));
                     
-                    authResponseEnc = Base64.getDecoder().decode(authResponseEnc);
-                    System.out.println("Encrypted, decoded response len: " + authResponseEnc.length);
+                    // Decode from base64
+                    byte[] tmp = Base64.getDecoder().decode(authResponseEnc);
+                    //System.out.println("Encrypted, decoded response len: " + tmp.length);
                     
-                    byte[] authResponse = rsa.decrypt(authResponseEnc, localKeyMgr.getPrivateKey());
-                    System.out.println("Decrypted, decoded response len: " + authResponseEnc.length);
+                    // Decrypt with private key
+                    byte[] authResponse = null;
+                    try {
+                        authResponse = rsa.decrypt(tmp, localKeyMgr.getPrivateKey());
+                    } catch (Exception e) {
+                        System.out.println("ERROR: Could not decrypt authentication response from client.");
+                        e.printStackTrace();
+                    }
+                    //System.out.println("Decrypted, decoded response len: " + authResponseEnc.length);
+                    //System.out.println(new String(authResponse, StandardCharsets.UTF_8));
                     
-                    System.out.println(new String(authResponse, StandardCharsets.UTF_8));
+                    long authProcessStop = System.currentTimeMillis();
                     
+                    // Verify match
                     if (!(Arrays.equals(authResponse, authData))) {
-                        System.out.println("ERROR: Failed to authenticate client.");
+                        System.out.println("WARNING: Failed to authenticate client.");
+                        System.out.println("WARNING: Continuing in plaintext mode.");
                     } else {
                         System.out.println("Client's identity has been validated.");
+                        System.out.println("Client authentication completed in " + (authProcessStop - authProcessStart) + " milliseconds.");
                     }                    
                 } else {
                     server.write("NO_AUTH".getBytes(StandardCharsets.UTF_8));
                 }
                 
+                System.out.println("\n----------------------------------------");
+                
+                CommandDetector serverCT = new CommandDetector();
                 
                 System.out.println("Connected to client.");                
                 System.out.println("Awaiting message from client...");
@@ -306,8 +364,7 @@ public class MessagerMain {
                 serverCT.start();
                 
                 while (!disconnect) {
-                    //serverCT.getCommand().command == CLToken.Commands.NONE
-
+                    
                     if (server.available() > 0) {
                         serverCT.close();
                         
@@ -323,6 +380,7 @@ public class MessagerMain {
                             disconnect = true;
                         }
                         
+                        // Print out lines of message
                         String[] messageArr = messageFromClient.split("\n");
                         for (int line = 0; line < messageArr.length; line++) {
                             if (!messageArr[line].strip().contentEquals("")) {
@@ -365,7 +423,6 @@ public class MessagerMain {
                     } else if (serverCT.getCommand().command != CLToken.Commands.NONE) {
                         System.out.println(serverCT.getCommand().value + ": command not available at this time.");
                         serverCT.close();
-                        serverCT.getCommand().command = CLToken.Commands.NONE;
                         serverCT = new CommandDetector();
                         serverCT.start();
                     }                    
@@ -402,7 +459,7 @@ public class MessagerMain {
                     System.out.println("Server port number?");
                     serverPort = clientClip.port();
                     
-                    // Reject existing listening ServerSocket
+                    // Reject local listening ServerSocket
                     while (serverAddress == localAddress) { //&& serverPort == localPort) {
                         System.out.println("Cannot connect to self! Please choose another host.");
                         System.out.println("Server address?");
@@ -430,40 +487,49 @@ public class MessagerMain {
                 {
                     System.out.println("Connected to " + serverAddress + ":" + serverPort + ".");
                     
-                    // Get server's public key
+                    // For server's public key
                     RSAPublicKeyManager serverRpkm = null;
-                    serverRpkm = loadRemotePublic();
                     
                     // Authenticate server
                     String servMsg = new String(client.readBytes(8), StandardCharsets.UTF_8);
-                    System.out.println(servMsg);
-                    System.out.println(servMsg.contains("RQ_AUTH"));
                     
                     if (servMsg.contains("RQ_AUTH")) {
                         System.out.println("Server has requested authentication.");
 
+                        // Get server's public key
+                        serverRpkm = loadRemotePublic();
+
                         // Get the server's authentication message, decrypt,
                         // re-encrypt and send
                         byte[] authDataEnc = client.readAllBytes();
-                        System.out.println("Received auth message from server");
-                        System.out.println("Encrypted, encoded message len: " + authDataEnc.length);
-                        System.out.println(new String(authDataEnc, StandardCharsets.UTF_8));
-                        System.out.flush();
+                        System.out.println("Received authentication message from server");
+                        //System.out.println("Encrypted, encoded message len: " + authDataEnc.length);
+                        //System.out.println(new String(authDataEnc, StandardCharsets.UTF_8));
                         
                         authDataEnc = Base64.getDecoder().decode(authDataEnc);
-                        System.out.println("Encrypted, decoded message len: " + authDataEnc.length);
+                        //System.out.println("Encrypted, decoded message len: " + authDataEnc.length);
                         
-                        byte[] authDataDec = rsa.decrypt(authDataEnc, localKeyMgr.getPrivateKey());
-                        System.out.println("Decrypted message: ");
-                        System.out.println(new String(authDataDec, StandardCharsets.UTF_8));
+                        byte[] authDataDec = null;
+                        try {
+                            authDataDec = rsa.decrypt(authDataEnc, localKeyMgr.getPrivateKey());
+                        } catch (Exception e) {
+                            System.out.println("ERROR: Could not decrypt authentication message from server.");
+                        }
+                        //System.out.println("Decrypted message: ");
+                        //System.out.println(new String(authDataDec, StandardCharsets.UTF_8));
                         
-                        byte[] tmp = rsa.encrypt(authDataDec, serverRpkm.getKey());
-                        System.out.println("Encrypted, decoded len: " + tmp.length);
+                        byte[] tmp = null;
+                        try {
+                            tmp = rsa.encrypt(authDataDec, serverRpkm.getKey());
+                        } catch (Exception e) {
+                            System.out.println("ERROR: Could not decrypt authentication message from server.");
+                        }
+                        //System.out.println("Encrypted, decoded len: " + tmp.length);
                         
                         byte[] returnAuthDataEnc = Base64.getEncoder().encode(tmp);
                         System.out.println("Sending response to server");
-                        System.out.println("Encrypted, encoded response len: " + returnAuthDataEnc.length);
-                        System.out.println(new String(returnAuthDataEnc, StandardCharsets.UTF_8));
+                        //System.out.println("Encrypted, encoded response len: " + returnAuthDataEnc.length);
+                        //System.out.println(new String(returnAuthDataEnc, StandardCharsets.UTF_8));
                         client.write(returnAuthDataEnc);
 
                         System.out.println("Returned authentication message. Awaiting response from server...");
@@ -472,9 +538,11 @@ public class MessagerMain {
                             System.out.println("Successfully authenticated server.");
                         } else {
                             System.out.println("ERROR: Failed to authenticate server");
+                            System.out.println("WARNING: Continuing in plaintext mode.");
                         }
                     } else {
-                        System.out.println("DEBUG: Server did not request authentication");
+                        System.out.println("Server did not request authentication.");
+                        System.out.println("WARNING: Continuing in plaintext mode.");
                     }
                     
                     System.out.println("\n----------------------------------------");
@@ -492,7 +560,6 @@ public class MessagerMain {
                     clientCT.start();
                     
                     while (!disconnect) {
-                        //serverCT.getCommand().command == CLToken.Commands.NONE
 
                         if (client.available() > 0) {
                             if (clientCT != null) {
@@ -551,7 +618,6 @@ public class MessagerMain {
                         } else if (clientCT.getCommand().command != CLToken.Commands.NONE) {
                             System.out.println(clientCT.getCommand().value + ": command not available at this time.");
                             clientCT.close(); 
-                            clientCT.getCommand().command = CLToken.Commands.NONE;
                             clientCT = new CommandDetector();
                             clientCT.start(); 
                         }
@@ -623,54 +689,7 @@ public class MessagerMain {
         }
         
         System.out.println("Goodbye.");
-        
-        //input.close();
-        
-        System.exit(0);    	    
-	    
-	    
-	    /*
-	    
-	    // Get message from user
-		System.out.println("Message?");
-		String messageStr = input.nextLine();
-        
-		// Convert message to byte array
-        byte[] messageBytes = messageStr.getBytes(StandardCharsets.UTF_8);
-
-        // Encrypt message
-        byte[] messageEnc = null;
-		try {
-            messageEnc = rsa.encrypt(messageBytes, keyMgr.getPublicKey());
-        } catch (InvalidKeyException e) {
-            System.out.println("WARNING Public key not valid for encryption");
-            e.printStackTrace();
-        }
-		
-		// Display encrypted message
-		System.out.println("Encrytped message: ");
-		String messageEncStr = new String(messageEnc, StandardCharsets.UTF_8);
-		System.out.println(messageEncStr);
-		
-		
-		// Decrypt message
-        byte[] messageDec = null;
-        try {
-            messageDec = rsa.decrypt(messageEnc, keyMgr.getPrivateKey());
-        } catch (InvalidKeyException e) {
-            System.out.println("WARNING Private key not valid for decryption");
-            e.printStackTrace();
-        }
-
-        // Display decrypted message
-		System.out.println("Decrypted message: ");
-		String messageDecStr = new String(messageDec, StandardCharsets.UTF_8);
-        System.out.println(messageDecStr);
-        */
-		
-		System.out.println("Done");
-		
-		//input.close();        
+        System.exit(0);  
 	}
 	
 	
@@ -970,30 +989,40 @@ public class MessagerMain {
 	}
 }
 
-/*// Send our public key
-byte[] pkMessage = new byte[PK_MESSAGE_PREFIX.length + authDataEnc.length];
-System.arraycopy(PK_MESSAGE_PREFIX, 0, pkMessage, 0, PK_MESSAGE_PREFIX.length);
-System.arraycopy(authDataEnc, 0, pkMessage, PK_MESSAGE_PREFIX.length, authDataEnc.length);
-server.write(pkMessage);*/
+/*  Old encryption test code
+// Get message from user
+System.out.println("Message?");
+String messageStr = input.nextLine();
 
+// Convert message to byte array
+byte[] messageBytes = messageStr.getBytes(StandardCharsets.UTF_8);
 
-
-/*byte[] serverPKMessage = client.readAllBytes();
-
-// Verify it's the public key message
-boolean pkMessageValid = true;
-for (int i = 0; i < PK_MESSAGE_PREFIX.length; i++) {
-    if (!(serverPKMessage[i] == PK_MESSAGE_PREFIX[i])) {
-        pkMessageValid = false;
-    }
+// Encrypt message
+byte[] messageEnc = null;
+try {
+    messageEnc = rsa.encrypt(messageBytes, keyMgr.getPublicKey());
+} catch (InvalidKeyException e) {
+    System.out.println("WARNING Public key not valid for encryption");
+    e.printStackTrace();
 }
 
-// If message format not recognized, notify and skip authentication, else continue
-if (!pkMessageValid) {
-    System.out.println("ERROR: Invalid public key transmission from server.");
-    System.out.println(new String(serverPKMessage, StandardCharsets.UTF_8));
-    System.out.println("NOTICE: Skipping server authentication.");
-} else {
-    byte[] serverPrivateKeyEncoded = new byte[serverPKMessage.length - PK_MESSAGE_PREFIX.length];
-    System.arraycopy(serverPKMessage, PK_MESSAGE_PREFIX.length, serverPrivateKeyEncoded, 0, serverPKMessage.length - PK_MESSAGE_PREFIX.length);
-    serverRpkm.loadKey(serverPrivateKeyEncoded);*/
+// Display encrypted message
+System.out.println("Encrytped message: ");
+String messageEncStr = new String(messageEnc, StandardCharsets.UTF_8);
+System.out.println(messageEncStr);
+
+
+// Decrypt message
+byte[] messageDec = null;
+try {
+    messageDec = rsa.decrypt(messageEnc, keyMgr.getPrivateKey());
+} catch (InvalidKeyException e) {
+    System.out.println("WARNING Private key not valid for decryption");
+    e.printStackTrace();
+}
+
+// Display decrypted message
+System.out.println("Decrypted message: ");
+String messageDecStr = new String(messageDec, StandardCharsets.UTF_8);
+System.out.println(messageDecStr);
+*/

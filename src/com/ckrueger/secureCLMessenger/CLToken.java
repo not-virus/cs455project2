@@ -1,11 +1,18 @@
-package com.ckrueger.secureMessager;
+package com.ckrueger.secureCLMessenger;
 
 /**
  * @author Cameron Krueger
- * This wouldn't need to exist if Java had structs
+ * This wouldn't need to exist if Java had structs. This class simply stores
+ * three values. That's it. An entire class just so I can return 3 values from
+ * one function. I miss programming in C/C++ so much right now.
+ * 
+ * Used when the user enters a command Initializes a CLToken object with a
+ * command and the string parsed from user entry Automatically sets isCommand
+ * to true.
  */
 public class CLToken {
 
+    // Most of these aren't being used yet
     public static enum Commands {
         HELP,
         CONNECT,
@@ -23,41 +30,33 @@ public class CLToken {
         INVALID,
         NONE
     }
-    
-    //public boolean isValidCommand;
+
     public boolean isCommand;
     public Commands command;
     public String value;
-    
+
     /**
-     * Used when the user enters a command
-     * Initializes a CLToken object with a command and the string parsed from user entry
-     * Automatically sets isCommand to true.
+     * Creates a new token object for a command. Sets the command type and
+     * value.
+     * 
      * @param command the command parsed from user entry
-     * @param value the raw text the user entered
+     * @param value   the raw text the user entered
      */
     public CLToken(Commands command, String value) {
         this.command = command;
         this.value = value;
         this.isCommand = true;
-        /*if (command != Commands.NONE && command != Commands.INVALID) {
-            this.isValidCommand = true;
-        } else {
-            this.isValidCommand = false;
-        }*/
     }
-    
+
     /**
-     * Used when the user enters a token
-     * Initializes a CLToken object with the string parsed from user entry. Automatically
-     * sets internal command to Commands.NONE and isCommand to false.
+     * Creates a new token object for a value only.
+     * 
      * @param value the raw text the user entered
      */
     public CLToken(String value) {
         this.value = value;
         this.command = Commands.NONE;
         this.isCommand = false;
-        //this.isValidCommand = false;
     }
-      
+
 }

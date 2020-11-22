@@ -1,10 +1,16 @@
-package com.ckrueger.secureMessager.crypto;
+package com.ckrueger.secureCLMessenger.crypto;
 
 import java.security.*;
 import java.security.spec.*;
 import java.io.*;
 import java.nio.file.*;
 
+/**
+ * @author Cameron Krueger
+ * Specifically for use with RSA. Stores a private key. Similar to the built-in
+ * PublicKey class, but adds key file I/O functionality and is only for use
+ * with RSA keys.
+ */
 public class RSAPublicKeyManager {
 
     private PublicKey key = null;
@@ -99,7 +105,8 @@ public class RSAPublicKeyManager {
      * @throws IOException
      * @throws InvalidKeySpecException
      */
-    public void loadKey(String filePath) throws IOException, InvalidKeySpecException {
+    public void loadKey(String filePath) throws IOException,
+            InvalidKeySpecException {
         // Public key file name must end with .pub
         if (!filePath.endsWith(".pub")) {
             filePath = filePath + ".pub";

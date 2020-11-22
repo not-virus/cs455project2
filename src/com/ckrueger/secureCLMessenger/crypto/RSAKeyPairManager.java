@@ -1,20 +1,25 @@
-package com.ckrueger.secureMessager.crypto;
+package com.ckrueger.secureCLMessenger.crypto;
 
 import java.security.*;
 import java.security.spec.*;
 import java.io.*;
 import java.nio.file.*;
 
+/**
+ * @author Cameron Krueger
+ * Specifically for use with RSA. Stores a private and public key. Similar to
+ * the built-in KeyPair class, but adds automatic key generation, key file I/O
+ * functionality and is only for use with RSA keys.
+ */
 public class RSAKeyPairManager {
 
     private PublicKey publicKey = null;
     private PrivateKey privateKey = null;
 
     /**
-     * Manages a public and private key pair, much like KeyPair, but
-     * specifically for RSA. Keys must be individually loaded from key files
-     * or generated with the generateKeyPair method before this class can be
-     * used.
+     * Manages a public and private RSA key pair.
+     * Keys must be individually loaded from key files or
+     * generated with the generateKeyPair method before this class can be used.
      */
     public RSAKeyPairManager() {
         this.privateKey = null;
@@ -22,10 +27,11 @@ public class RSAKeyPairManager {
     }
 
     /**
-     * Manages a public and private key pair, much like KeyPair, but
-     * specifically for RSA. Will automatically generate keys of size keySize
+     * Manages a public and private RSA key pair.
+     * Will automatically generate keys of size keySize
      * bits upon instantiation and can be used to save and load keys from a
      * file.
+     * 
      * @param keySize the desired size of the RSA keys in bits
      */
     public RSAKeyPairManager(int keySize) {
@@ -66,6 +72,7 @@ public class RSAKeyPairManager {
     /**
      * Writes a PKCS8 encoded private key to a file, deleting the file if it
      * already exists, and creating a new file
+     * 
      * @param filePath path to write the private key file to
      * @throws IOException if unable to write key to file
      */
@@ -78,7 +85,7 @@ public class RSAKeyPairManager {
             tmpFileObj.delete();
             tmpFileObj.createNewFile();
         }
-        
+
         // Write key to file
         FileOutputStream file = new FileOutputStream(filePath);
         file.write(this.privateKey.getEncoded());
@@ -86,8 +93,9 @@ public class RSAKeyPairManager {
     }
 
     /**
-     * Writes a X509 encoded public key to a file, deleting the file if it
+     * Writes a X509 encoded public key to a file, deleting the file if 
      * already exists, and creating a new file
+     * 
      * @param filePath path to write the public key file to
      * @throws IOException if unable to write key to file
      */
@@ -96,7 +104,7 @@ public class RSAKeyPairManager {
         if (!filePath.endsWith(".pub")) {
             filePath = filePath + ".pub";
         }
-        
+
         // Create file if it doesn't exist, if it does, delete and create new
         File tmpFileObj = new File(filePath);
         if (!tmpFileObj.exists()) {
@@ -105,7 +113,7 @@ public class RSAKeyPairManager {
             tmpFileObj.delete();
             tmpFileObj.createNewFile();
         }
-        
+
         // Write key to file
         FileOutputStream file = new FileOutputStream(filePath);
         file.write(this.publicKey.getEncoded());
@@ -114,12 +122,14 @@ public class RSAKeyPairManager {
 
     /**
      * Loads a PKCS8 encoded private key from a file
+     * 
      * @param filePath path to a PKCS8 encoded private keyFile
-     * @throws IOException if unable to load key from file
+     * @throws IOException             if unable to load key from file
      * @throws InvalidKeySpecException if the key stored in the file is stored
-     * with the incorrect keyspec
+     *                                 with incorrect keyspec
      */
-    public void loadPrivate(String filePath) throws IOException, InvalidKeySpecException {
+    public void loadPrivate(String filePath) throws IOException,
+            InvalidKeySpecException {
         // Open FileInputStream on the public key file
         FileInputStream keyFile = new FileInputStream(filePath + "");
 
@@ -142,12 +152,14 @@ public class RSAKeyPairManager {
 
     /**
      * Loads a X509 encoded public key from a file
+     * 
      * @param filePath path to a X509 encoded public keyFile
-     * @throws IOException if unable to load key from file
+     * @throws IOException             if unable to load key from file
      * @throws InvalidKeySpecException if the key stored in the file is stored
-     * with the incorrect keyspec
+     *                                 with the incorrect keyspec
      */
-    public void loadPublic(String filePath) throws IOException, InvalidKeySpecException {
+    public void loadPublic(String filePath) throws IOException,
+            InvalidKeySpecException {
         // Public key file name must end with .pub
         if (!filePath.endsWith(".pub")) {
             filePath = filePath + ".pub";
@@ -171,7 +183,7 @@ public class RSAKeyPairManager {
             e.printStackTrace(); // Will never get here
         }
     }
-    
+
     /**
      * @return a secure RSA key pair
      */
@@ -206,5 +218,5 @@ public class RSAKeyPairManager {
     private void setPublicKey(PublicKey publicKey) {
         this.publicKey = publicKey;
     }
-    
+
 }

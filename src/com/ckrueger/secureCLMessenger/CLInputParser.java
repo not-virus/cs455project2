@@ -1,9 +1,9 @@
-package com.ckrueger.secureMessager;
+package com.ckrueger.secureCLMessenger;
 
 import java.util.Scanner;
 import java.util.regex.*;
 
-import com.ckrueger.secureMessager.CLToken.Commands;
+import com.ckrueger.secureCLMessenger.CLToken.Commands;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -326,7 +326,7 @@ public class CLInputParser {
     
     /**
      * Filters a command from the command line
-     * @return a cksm command
+     * @return a CLToken command
      * @throws IOException if unable to read user input from clIn
      */
     public CLToken command() throws IOException {
@@ -414,14 +414,14 @@ public class CLInputParser {
     }*/
     
     /**
-     * Takes input from user by prefixing line with "cksm> " prompt
+     * Takes input from user by prefixing line with "clsm> " prompt
      * @return the line the user entered
      * @throws IOException if unable to read user input from Scanner open on
      *  System.in 
      */
     private String clIn() throws IOException {
         // Print prompt
-        System.out.print("cksm> ");
+        System.out.print("clsm> ");
        
         // Waits until a line is available or told to skip
         while (input != null && System.in.available() == 0 && !this.skipInput) {
@@ -457,7 +457,7 @@ public class CLInputParser {
     }
     
     /**
-     * Takes multiple lines of input from user by prefixing block with "cksm#"
+     * Takes multiple lines of input from user by prefixing block with "clsm#"
      * prompt
      * @return the lines the user entered
      * @throws IOException if unable to read user input from Scanner open on
@@ -465,7 +465,7 @@ public class CLInputParser {
      */
     private String[] clMulti() throws IOException {
         // Print prompt
-        System.out.println("cksm#");
+        System.out.println("clsm#");
         
         // Input string and message buffer
         String in = "";

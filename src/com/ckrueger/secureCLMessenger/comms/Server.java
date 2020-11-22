@@ -1,9 +1,14 @@
-package com.ckrueger.secureMessager.comms;
+package com.ckrueger.secureCLMessenger.comms;
 
 import java.io.*;
 import java.net.*;
 import java.util.Arrays;
 
+/**
+ * @author Cameron Krueger
+ * A basic server class which neatly wraps up the server side of Socket
+ * communication
+ */
 public class Server {
 
     final int READ_BUFFER_SIZE = 2048;
@@ -94,7 +99,8 @@ public class Server {
     
     /**
      * @param len number of bytes to read from client
-     * @return an array of bytes received from the client if available, else null
+     * @return an array of bytes received from the client if available, else
+     *         null
      * @throws IOException
      */
     public byte[] readBytes(int len) throws IOException {
@@ -116,7 +122,8 @@ public class Server {
     }
     
     /**
-     * @return an array of bytes received from the client if available, else null
+     * @return an array of bytes received from the client if available, else
+     *         null
      * @throws IOException
      */
     public byte[] readAllBytes() throws IOException {
