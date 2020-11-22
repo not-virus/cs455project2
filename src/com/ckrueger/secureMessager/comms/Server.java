@@ -39,8 +39,8 @@ public class Server {
         this.socket = serverSocket.accept();
         
         // Configure IO streams
-        this.dataInput = new DataInputStream(new BufferedInputStream(socket.getInputStream())); //socket.getInputStream(); //new DataInputStream(socket.getInputStream());
-        this.dataOutput = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream())); //socket.getOutputStream(); //new DataOutputStream(socket.getOutputStream());        
+        this.dataInput = socket.getInputStream();
+        this.dataOutput = socket.getOutputStream();        
     }
     
     /**
@@ -103,7 +103,8 @@ public class Server {
         // Read len bytes from input stream OR up to BUFFER_SIZE
         int readCount = 0;
         int currentByte = 0;
-        while (readCount < READ_BUFFER_SIZE && readCount < len && (currentByte = dataInput.read()) != 3) {
+        while (readCount < READ_BUFFER_SIZE && readCount < len && (currentByte
+                = dataInput.read()) != 3) {
             receivedData[readCount] = (byte) currentByte;
             readCount++;
         }
@@ -122,7 +123,8 @@ public class Server {
         // Read available bytes                
         int readCount = 0;
         int currentByte = 0;
-        while (readCount < READ_BUFFER_SIZE && (currentByte = dataInput.read()) != 3) {
+        while (readCount < READ_BUFFER_SIZE && (currentByte = dataInput.read())
+                != 3) {
             receivedData[readCount] = (byte) currentByte;
             readCount++;
         }

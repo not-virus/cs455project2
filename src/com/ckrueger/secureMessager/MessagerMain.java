@@ -236,13 +236,7 @@ public class MessagerMain {
                     } catch (InvalidKeyException e) {
                         System.out.println("WARNING Public key not valid for encryption");
                         e.printStackTrace();
-                    }
-                    
-                    // Display encrypted message
-                    //System.out.println("Encrytped message: ");
-                    //String authEncStr = new String(authEnc, StandardCharsets.UTF_8);
-                    //System.out.println(authEncStr);
-                    
+                    }                    
                     
                     // Decrypt message
                     byte[] authDec = null;
@@ -441,12 +435,12 @@ public class MessagerMain {
                     if (servMsg.contains("RQ_AUTH")) {
                         System.out.println("Server has requested authentication.");
 
-                        // Now that we have the server's public key, get the server's
-                        //  authentication message, decrypt, re-encrypt and send
+                        // Get the server's authentication message, decrypt,
+                        // re-encrypt and send
                         byte[] authDataEnc = client.readAllBytes();
                         System.out.println(authDataEnc.length);
-                        authDataEnc = Base64.getDecoder().decode(authDataEnc);
                         System.out.println(new String(authDataEnc, StandardCharsets.UTF_8));
+                        authDataEnc = Base64.getDecoder().decode(authDataEnc);
                         byte[] authDataDec = rsa.decrypt(authDataEnc, localKeyMgr.getPrivateKey());
                         byte[] returnAuthDataEnc = Base64.getEncoder().encode(rsa.encrypt(authDataDec, serverRpkm.getKey()));
                         client.write(returnAuthDataEnc);

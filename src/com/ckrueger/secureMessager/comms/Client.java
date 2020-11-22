@@ -19,7 +19,8 @@ public class Client {
      * @throws UnknownHostException
      * @throws IOException
      */
-    public Client(String address, int port) throws UnknownHostException, IOException {
+    public Client(String address, int port) throws UnknownHostException,
+        IOException {
         this.address = address;
         this.port = port;
         
@@ -32,13 +33,14 @@ public class Client {
      * @throws UnknownHostException
      * @throws IOException
      */
-    public void open() throws UnknownHostException, IOException, ConnectException {
+    public void open() throws UnknownHostException, IOException,
+        ConnectException {
         // Open client-side connection to server
         this.socket = new Socket(address, port);
         
         // Configure IO streams
-        this.dataInput = new DataInputStream(new BufferedInputStream(socket.getInputStream()));//socket.getInputStream();
-        this.dataOutput = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));//socket.getOutputStream();   
+        this.dataInput = socket.getInputStream();
+        this.dataOutput = socket.getOutputStream();   
     }
     
     /**
@@ -84,7 +86,8 @@ public class Client {
     
     /**
      * @param len number of bytes to read from server
-     * @return an array of bytes received from the server if available, else null
+     * @return an array of bytes received from the server if available, else
+     * null
      * @throws IOException
      */
     public byte[] readBytes(int len) throws IOException {
@@ -94,7 +97,8 @@ public class Client {
         // Read len bytes from input stream OR up to BUFFER_SIZE
         int readCount = 0;
         int currentByte = 0;
-        while (readCount < READ_BUFFER_SIZE && readCount < len && (currentByte = dataInput.read()) != 3) {
+        while (readCount < READ_BUFFER_SIZE && readCount < len && (currentByte
+                = dataInput.read()) != 3) {
             receivedData[readCount] = (byte) currentByte;
             readCount++;
         }
@@ -113,7 +117,8 @@ public class Client {
         // Read available bytes                
         int readCount = 0;
         int currentByte = 0;
-        while (readCount < READ_BUFFER_SIZE && (currentByte = dataInput.read()) != 3) {
+        while (readCount < READ_BUFFER_SIZE && (currentByte = dataInput.read())
+                != 3) {
             receivedData[readCount] = (byte) currentByte;
             readCount++;
         }
