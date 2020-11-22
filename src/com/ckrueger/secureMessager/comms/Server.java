@@ -39,8 +39,8 @@ public class Server {
         this.socket = serverSocket.accept();
         
         // Configure IO streams
-        this.dataInput = new BufferedInputStream(socket.getInputStream()); //socket.getInputStream(); //new DataInputStream(socket.getInputStream());
-        this.dataOutput = new BufferedOutputStream(socket.getOutputStream()); //socket.getOutputStream(); //new DataOutputStream(socket.getOutputStream());        
+        this.dataInput = new DataInputStream(new BufferedInputStream(socket.getInputStream())); //socket.getInputStream(); //new DataInputStream(socket.getInputStream());
+        this.dataOutput = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream())); //socket.getOutputStream(); //new DataOutputStream(socket.getOutputStream());        
     }
     
     /**
@@ -99,15 +99,6 @@ public class Server {
     public byte[] readBytes(int len) throws IOException {
         // This will remain null unless data is available to read
         byte[] receivedData = new byte[READ_BUFFER_SIZE];
-        
-        /*if (dataInput.available() != 0)
-        {
-            // Read available bytes
-            receivedData = dataInput.readNBytes(len);
-        }*/
-        
-        // Read len bytes
-        //receivedData = dataInput.readNBytes(len);
         
         // Read len bytes from input stream OR up to BUFFER_SIZE
         int readCount = 0;

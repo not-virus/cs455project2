@@ -37,8 +37,8 @@ public class Client {
         this.socket = new Socket(address, port);
         
         // Configure IO streams
-        this.dataInput = socket.getInputStream(); //new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-        this.dataOutput = socket.getOutputStream(); //new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));   
+        this.dataInput = new DataInputStream(new BufferedInputStream(socket.getInputStream()));//socket.getInputStream();
+        this.dataOutput = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));//socket.getOutputStream();   
     }
     
     /**
@@ -91,13 +91,6 @@ public class Client {
         // This will remain null unless data is available to read
         byte[] receivedData = new byte[READ_BUFFER_SIZE];
         
-        /*if (dataInput.available() != 0)
-        {
-            // Read available bytes
-            receivedData = dataInput.readNBytes(len);
-        }*/
-        
-        
         // Read len bytes from input stream OR up to BUFFER_SIZE
         int readCount = 0;
         int currentByte = 0;
@@ -114,15 +107,6 @@ public class Client {
      * @throws IOException
      */
     public byte[] readAllBytes() throws IOException {
-        // This will remain null unless data is available to read
-        /*byte[] receivedData = null;
-        
-        if (dataInput.available() != 0)
-        {
-            // Read available bytes
-            receivedData = dataInput.readAllBytes();
-        }*/
-        
         // This will remain null unless data is available to read
         byte[] receivedData = new byte[READ_BUFFER_SIZE];
         

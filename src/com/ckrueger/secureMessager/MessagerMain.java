@@ -268,16 +268,20 @@ public class MessagerMain {
                         e.printStackTrace();
                     }
                     
+                    authDataEnc = Base64.getEncoder().encode(authDataEnc);
+                    
                     // Send encrypted auth server
                     server.write(authDataEnc);
                     System.out.println("Sent auth message.");
-                    System.out.println(Base64.getEncoder().encodeToString(authDataEnc));
+                    System.out.println(new String(authDataEnc, StandardCharsets.UTF_8));
                     
                     // Get respoonse from server, decrypt and verify
                     byte[] authResponseEnc = server.readAllBytes();
+                    authResponseEnc = Base64.getDecoder().decode(authResponseEnc);
                     System.out.println("Received response");
                     System.out.println("Response len: " + authResponseEnc.length);
                     byte[] authResponse = rsa.decrypt(authResponseEnc, localKeyMgr.getPrivateKey());
+                    System.out.println(new String(authResponse, StandardCharsets.UTF_8));
                     
                     if (!(authResponse == authData)) {
                         System.out.println("ERROR: Failed to authenticate client.");
@@ -441,9 +445,10 @@ public class MessagerMain {
                         //  authentication message, decrypt, re-encrypt and send
                         byte[] authDataEnc = client.readAllBytes();
                         System.out.println(authDataEnc.length);
-                        System.out.println(Base64.getEncoder().encodeToString(authDataEnc));
+                        authDataEnc = Base64.getDecoder().decode(authDataEnc);
+                        System.out.println(new String(authDataEnc, StandardCharsets.UTF_8));
                         byte[] authDataDec = rsa.decrypt(authDataEnc, localKeyMgr.getPrivateKey());
-                        byte[] returnAuthDataEnc = rsa.encrypt(authDataDec, serverRpkm.getKey());
+                        byte[] returnAuthDataEnc = Base64.getEncoder().encode(rsa.encrypt(authDataDec, serverRpkm.getKey()));
                         client.write(returnAuthDataEnc);
                         
                         System.out.println("Returned authentication message. Awaiting response from server...");
