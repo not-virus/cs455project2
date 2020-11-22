@@ -267,6 +267,7 @@ public class MessagerMain {
                     // Send encrypted auth data to client
                     server.write(authDataEnc);
                     System.out.println("Sent auth message to client.");
+                    System.out.println("Message len: " + authDataEnc.length);
                     System.out.println(new String(authDataEnc, StandardCharsets.UTF_8));
                     
                     // Get response from client, decrypt and verify
@@ -439,7 +440,8 @@ public class MessagerMain {
                         // Get the server's authentication message, decrypt,
                         // re-encrypt and send
                         byte[] authDataEnc = client.readAllBytes();
-                        System.out.println(authDataEnc.length);
+                        System.out.println("Received auth message from server");
+                        System.out.println("Message len: " + authDataEnc.length);
                         System.out.println(new String(authDataEnc, StandardCharsets.UTF_8));
                         System.out.flush();
                         authDataEnc = Base64.getDecoder().decode(authDataEnc);
@@ -447,6 +449,9 @@ public class MessagerMain {
                         System.out.println("Decrypted message: ");
                         System.out.println(new String(authDataDec, StandardCharsets.UTF_8));
                         byte[] returnAuthDataEnc = Base64.getEncoder().encode(rsa.encrypt(authDataDec, serverRpkm.getKey()));
+                        System.out.println("Sending response to server");
+                        System.out.println("Response len: " + returnAuthDataEnc);
+                        System.out.println(returnAuthDataEnc);
                         client.write(returnAuthDataEnc);
 
                         System.out.println("Returned authentication message. Awaiting response from server...");
