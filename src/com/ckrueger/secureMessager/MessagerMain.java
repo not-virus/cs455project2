@@ -256,27 +256,32 @@ public class MessagerMain {
                     byte[] authDataEnc = null;
                     try {
                         authDataEnc = rsa.encrypt(authData, rpkm.getKey());
-                        System.out.println("Encrypted authentication string. Length: " + authDataEnc.length);
+                        System.out.println("Encrypted authentication string.");
+                        System.out.println("Encrypted, decoded message len: " + authDataEnc.length);
                     } catch (InvalidKeyException e) {
                         System.out.println("ERROR: Public key not valid for encryption");
                         e.printStackTrace();
                     }
                     
                     authDataEnc = Base64.getEncoder().encode(authDataEnc);
-                    
                     // Send encrypted auth data to client
                     server.write(authDataEnc);
                     System.out.println("Sent auth message to client.");
-                    System.out.println("Message len: " + authDataEnc.length);
+                    System.out.println("Encrypted, encoded message len: " + authDataEnc.length);
                     System.out.println(new String(authDataEnc, StandardCharsets.UTF_8));
                     
                     // Get response from client, decrypt and verify
                     byte[] authResponseEnc = server.readAllBytes();
                     System.out.println("Received response from client.");
-                    System.out.println("Response len: " + authResponseEnc.length);
+                    System.out.println("Encrypted, encoded response len: " + authResponseEnc.length);
                     System.out.println(new String(authResponseEnc, StandardCharsets.UTF_8));
+                    
                     authResponseEnc = Base64.getDecoder().decode(authResponseEnc);
+                    System.out.println("Encrypted, decoded response len: " + authResponseEnc.length);
+                    
                     byte[] authResponse = rsa.decrypt(authResponseEnc, localKeyMgr.getPrivateKey());
+                    System.out.println("Decrypted, decoded response len: " + authResponseEnc.length);
+                    
                     System.out.println(new String(authResponse, StandardCharsets.UTF_8));
                     
                     if (!(Arrays.equals(authResponse, authData))) {
@@ -441,17 +446,24 @@ public class MessagerMain {
                         // re-encrypt and send
                         byte[] authDataEnc = client.readAllBytes();
                         System.out.println("Received auth message from server");
-                        System.out.println("Message len: " + authDataEnc.length);
+                        System.out.println("Encrypted, encoded message len: " + authDataEnc.length);
                         System.out.println(new String(authDataEnc, StandardCharsets.UTF_8));
                         System.out.flush();
+                        
                         authDataEnc = Base64.getDecoder().decode(authDataEnc);
+                        System.out.println("Encrypted, decoded message len: " + authDataEnc.length);
+                        
                         byte[] authDataDec = rsa.decrypt(authDataEnc, localKeyMgr.getPrivateKey());
                         System.out.println("Decrypted message: ");
                         System.out.println(new String(authDataDec, StandardCharsets.UTF_8));
-                        byte[] returnAuthDataEnc = Base64.getEncoder().encode(rsa.encrypt(authDataDec, serverRpkm.getKey()));
+                        
+                        byte[] tmp = rsa.encrypt(authDataDec, serverRpkm.getKey());
+                        System.out.println("Encrypted, decoded len: " + tmp.length);
+                        
+                        byte[] returnAuthDataEnc = Base64.getEncoder().encode(tmp);
                         System.out.println("Sending response to server");
-                        System.out.println("Response len: " + returnAuthDataEnc);
-                        System.out.println(returnAuthDataEnc);
+                        System.out.println("Encrypted, encoded response len: " + returnAuthDataEnc.length);
+                        System.out.println(new String(returnAuthDataEnc, StandardCharsets.UTF_8));
                         client.write(returnAuthDataEnc);
 
                         System.out.println("Returned authentication message. Awaiting response from server...");
