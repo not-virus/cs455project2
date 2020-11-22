@@ -112,7 +112,7 @@ public class Server {
         
         byte[] tmp = Arrays.copyOf(receivedData, readCount);
         
-        return receivedData;
+        return tmp;
     }
     
     /**
@@ -134,7 +134,7 @@ public class Server {
         
         byte[] tmp = Arrays.copyOf(receivedData, readCount);
         
-        return receivedData;
+        return tmp;
     }
     
     /**
