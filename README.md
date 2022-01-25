@@ -1,8 +1,10 @@
+**\#\#\#** **UPDATE 2022:** This project is no longer being maintained **\#\#\#**
+
 # Command Line Secure* Messenger
 **\*NOTE**: This software does NOT yet (and may never) provide secure messaging, let alone true end-to-end encryption. This software is the product of a misunderstood school assignment. It is designed to authenticate other hosts andencrypt messages using the RSA encryption algorithm. Not only does this software not provide that functionality in its current state, RSA is not suitable for message encryption. This software sends messages in plaintext, meaning anyone can see and read your messages if they want to. Do not use this software for any purpose other than personal curiosity.
 
 ## About CLSM
-This is a work-in-progress. It's an absolute mess in its current state. That being said, this is currently apartially functional command-line based peer-to-peer chat program.  The .jar file should be up to date, so if you'd like to test it out, you can run it with the command `java -jar CLSM.jar`. It's worth noting that the `!help` command does not actually do anything at the current time. The following list outlines the commands currently available:
+This is a work-in-progress. It's an absolute mess in its current state. That being said, this is currently a partially functional command-line based peer-to-peer chat program.  The .jar file should be up to date, so if you'd like to test it out, you can run it with the command `java -jar CLSM.jar`. It's worth noting that the `!help` command does not actually do anything at the current time. The following list outlines the commands currently available:
 * `!connect`: connect to a remote host
 * `!message`: send a message to a connected machine
 * `!disconnect` or `!disco`: terminate an active chat session
